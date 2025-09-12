@@ -1,0 +1,26 @@
+{
+  "name": "FHE Diploma Vault",
+  "short_name": "FHE Vault",
+  "description": "Secure Education Records with Fully Homomorphic Encryption",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["education", "security", "blockchain"],
+  "lang": "en",
+  "dir": "ltr"
+}

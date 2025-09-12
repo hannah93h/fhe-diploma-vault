@@ -6,6 +6,7 @@ import WalletConnect from "@/components/wallet/WalletConnect";
 import CertificateCard from "@/components/credentials/CertificateCard";
 import CertificateDetailModal from "@/components/credentials/CertificateDetailModal";
 import EmployerVerification from "@/components/verification/EmployerVerification";
+import Header from "@/components/layout/Header";
 import { GraduationCap, Shield, Users, Award, Lock, Search } from "lucide-react";
 import universityHero from "@/assets/university-hero.jpg";
 import certificateIcon from "@/assets/certificate-icon.jpg";
@@ -77,6 +78,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-certificate-bg">
+      {/* Header with Logo and Navigation */}
+      <Header />
+      
       {/* Hero Section */}
       <section className="relative bg-gradient-academic text-primary-foreground overflow-hidden">
         <div 

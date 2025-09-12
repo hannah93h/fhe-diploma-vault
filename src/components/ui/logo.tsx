@@ -1,0 +1,114 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface LogoProps {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
+  showText?: boolean;
+}
+
+const Logo: React.FC<LogoProps> = ({ 
+  size = 'md', 
+  className,
+  showText = true 
+}) => {
+  const sizeClasses = {
+    sm: 'w-6 h-6',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12',
+    xl: 'w-16 h-16'
+  };
+
+  const textSizeClasses = {
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
+    xl: 'text-xl'
+  };
+
+  return (
+    <div className={cn('flex items-center gap-2', className)}>
+      <svg 
+        className={cn(sizeClasses[size])} 
+        viewBox="0 0 64 64" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Background circle with gradient */}
+        <defs>
+          <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{stopColor:'#1e3a8a', stopOpacity:1}} />
+            <stop offset="100%" style={{stopColor:'#3b82f6', stopOpacity:1}} />
+          </linearGradient>
+          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{stopColor:'#fbbf24', stopOpacity:1}} />
+            <stop offset="100%" style={{stopColor:'#f59e0b', stopOpacity:1}} />
+          </linearGradient>
+          <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{stopColor:'#10b981', stopOpacity:1}} />
+            <stop offset="100%" style={{stopColor:'#059669', stopOpacity:1}} />
+          </linearGradient>
+        </defs>
+        
+        {/* Main background circle */}
+        <circle cx="32" cy="32" r="30" fill="url(#bgGradient)" stroke="#1e40af" strokeWidth="2"/>
+        
+        {/* Graduation cap (education symbol) */}
+        <g transform="translate(16, 12)">
+          {/* Cap base */}
+          <rect x="4" y="8" width="24" height="3" rx="1.5" fill="url(#goldGradient)"/>
+          {/* Cap top */}
+          <path d="M6 8 L16 2 L26 8 L16 14 Z" fill="url(#goldGradient)" stroke="#d97706" strokeWidth="0.5"/>
+          {/* Tassel */}
+          <line x1="26" y1="8" x2="30" y2="6" stroke="#d97706" strokeWidth="2" strokeLinecap="round"/>
+          <circle cx="30" cy="6" r="1" fill="#d97706"/>
+        </g>
+        
+        {/* Shield with lock (security symbol) */}
+        <g transform="translate(20, 28)">
+          {/* Shield background */}
+          <path d="M12 2 L20 6 L20 16 C20 20 16 24 12 24 C8 24 4 20 4 16 L4 6 Z" fill="url(#shieldGradient)" stroke="#047857" strokeWidth="0.5"/>
+          {/* Lock body */}
+          <rect x="8" y="10" width="8" height="6" rx="1" fill="#ffffff" stroke="#047857" strokeWidth="0.5"/>
+          {/* Lock shackle */}
+          <path d="M10 10 L10 7 C10 5 11 4 12 4 C13 4 14 5 14 7 L14 10" fill="none" stroke="#047857" strokeWidth="1" strokeLinecap="round"/>
+        </g>
+        
+        {/* Blockchain nodes (decentralized network) */}
+        <g transform="translate(8, 40)">
+          {/* Node 1 */}
+          <circle cx="4" cy="4" r="2" fill="#fbbf24" stroke="#d97706" strokeWidth="0.5"/>
+          {/* Node 2 */}
+          <circle cx="20" cy="4" r="2" fill="#fbbf24" stroke="#d97706" strokeWidth="0.5"/>
+          {/* Node 3 */}
+          <circle cx="12" cy="12" r="2" fill="#fbbf24" stroke="#d97706" strokeWidth="0.5"/>
+          {/* Connection lines */}
+          <line x1="6" y1="4" x2="18" y2="4" stroke="#d97706" strokeWidth="1" strokeDasharray="1,1"/>
+          <line x1="6" y1="6" x2="10" y2="10" stroke="#d97706" strokeWidth="1" strokeDasharray="1,1"/>
+          <line x1="18" y1="6" x2="14" y2="10" stroke="#d97706" strokeWidth="1" strokeDasharray="1,1"/>
+        </g>
+        
+        {/* FHE encryption symbol (mathematical brackets) */}
+        <g transform="translate(40, 8)">
+          <text x="8" y="12" fontFamily="monospace" fontSize="8" fontWeight="bold" fill="#10b981">FHE</text>
+          {/* Mathematical brackets */}
+          <path d="M2 2 L2 10 M2 2 L4 2 M2 10 L4 10" fill="none" stroke="#10b981" strokeWidth="1" strokeLinecap="round"/>
+          <path d="M14 2 L14 10 M12 2 L14 2 M12 10 L14 10" fill="none" stroke="#10b981" strokeWidth="1" strokeLinecap="round"/>
+        </g>
+      </svg>
+      
+      {showText && (
+        <div className="flex flex-col">
+          <span className={cn('font-bold text-academic-navy', textSizeClasses[size])}>
+            FHE Diploma Vault
+          </span>
+          <span className={cn('text-xs text-muted-foreground', size === 'sm' ? 'hidden' : '')}>
+            Secure Education Records
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Logo;
