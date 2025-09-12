@@ -56,13 +56,17 @@ npm run dev
 
 ## Environment Variables
 
+Create a `.env` file in the root directory with the following variables:
+
 ```env
 NEXT_PUBLIC_CHAIN_ID=11155111
-NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/b18fb7e6ca7045ac83c41157ab93f990
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=2ec9743d0d0cd7fb94dee1a7e6d33475
-NEXT_PUBLIC_INFURA_API_KEY=b18fb7e6ca7045ac83c41157ab93f990
+NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_API_KEY
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=YOUR_WALLET_CONNECT_PROJECT_ID
+NEXT_PUBLIC_INFURA_API_KEY=YOUR_INFURA_API_KEY
 NEXT_PUBLIC_RPC_URL=https://1rpc.io/sepolia
 ```
+
+**Security Note**: Replace the placeholder values with your actual API keys and project IDs. Never commit sensitive credentials to version control.
 
 ## Smart Contracts
 

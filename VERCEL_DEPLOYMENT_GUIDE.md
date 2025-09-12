@@ -38,13 +38,13 @@ Click "Environment Variables" and add the following variables:
 ```env
 # Chain Configuration
 NEXT_PUBLIC_CHAIN_ID=11155111
-NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/b18fb7e6ca7045ac83c41157ab93f990
+NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_API_KEY
 
 # Wallet Connect Configuration
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=2ec9743d0d0cd7fb94dee1a7e6d33475
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=YOUR_WALLET_CONNECT_PROJECT_ID
 
 # Infura Configuration (Optional)
-NEXT_PUBLIC_INFURA_API_KEY=b18fb7e6ca7045ac83c41157ab93f990
+NEXT_PUBLIC_INFURA_API_KEY=YOUR_INFURA_API_KEY
 NEXT_PUBLIC_RPC_URL=https://1rpc.io/sepolia
 
 # Contract Addresses (Update after deployment)
@@ -55,9 +55,11 @@ NEXT_PUBLIC_FHE_NETWORK_URL=https://api.zama.ai/fhevm
 ```
 
 **Important**: 
+- Replace all placeholder values (YOUR_*) with your actual API keys and project IDs
 - Replace `NEXT_PUBLIC_DIPLOMA_VAULT_CONTRACT_ADDRESS` with the actual deployed contract address
 - These are public variables (prefixed with `NEXT_PUBLIC_`) and will be visible in the client-side code
 - Do not add sensitive private keys or secrets here
+- Never commit actual API keys to version control
 
 ### Step 5: Deploy
 
@@ -102,8 +104,8 @@ NEXT_PUBLIC_FHE_NETWORK_URL=https://api.zama.ai/fhevm
 |----------|-------------|---------------|
 | `NEXT_PUBLIC_CHAIN_ID` | Ethereum chain ID | `11155111` (Sepolia) |
 | `NEXT_PUBLIC_RPC_URL` | RPC endpoint URL | `https://sepolia.infura.io/v3/...` |
-| `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | WalletConnect project ID | `2ec9743d0d0cd7fb94dee1a7e6d33475` |
-| `NEXT_PUBLIC_INFURA_API_KEY` | Infura API key | `b18fb7e6ca7045ac83c41157ab93f990` |
+| `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | WalletConnect project ID | `YOUR_WALLET_CONNECT_PROJECT_ID` |
+| `NEXT_PUBLIC_INFURA_API_KEY` | Infura API key | `YOUR_INFURA_API_KEY` |
 | `NEXT_PUBLIC_DIPLOMA_VAULT_CONTRACT_ADDRESS` | Deployed contract address | `0x...` |
 | `NEXT_PUBLIC_FHE_NETWORK_URL` | FHE network endpoint | `https://api.zama.ai/fhevm` |
 
