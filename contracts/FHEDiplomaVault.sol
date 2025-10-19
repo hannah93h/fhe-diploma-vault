@@ -141,7 +141,7 @@ contract FHEDiplomaVault is SepoliaConfig {
         euint8 internalDegreeType = FHE.fromExternal(_degreeType, inputProof);
         
         diplomas[diplomaId] = Diploma({
-            diplomaId: FHE.asEuint32(0), // Will be set properly later
+            diplomaId: FHE.asEuint32(diplomaId),
             studentId: internalStudentId,
             graduationYear: internalGraduationYear,
             gpa: internalGpa,
@@ -157,6 +157,22 @@ contract FHEDiplomaVault is SepoliaConfig {
             expiryDate: _expiryDate,
             ipfsHash: _ipfsHash
         });
+        
+        // Set ACL permissions for decryption
+        FHE.allowThis(diplomas[diplomaId].studentId);
+        FHE.allowThis(diplomas[diplomaId].graduationYear);
+        FHE.allowThis(diplomas[diplomaId].gpa);
+        FHE.allowThis(diplomas[diplomaId].degreeType);
+        FHE.allowThis(diplomas[diplomaId].isVerified);
+        FHE.allowThis(diplomas[diplomaId].isActive);
+        
+        // Allow student to decrypt their own data
+        FHE.allow(diplomas[diplomaId].studentId, _student);
+        FHE.allow(diplomas[diplomaId].graduationYear, _student);
+        FHE.allow(diplomas[diplomaId].gpa, _student);
+        FHE.allow(diplomas[diplomaId].degreeType, _student);
+        FHE.allow(diplomas[diplomaId].isVerified, _student);
+        FHE.allow(diplomas[diplomaId].isActive, _student);
         
         emit DiplomaIssued(diplomaId, _student, msg.sender);
         return diplomaId;
@@ -371,5 +387,63 @@ contract FHEDiplomaVault is SepoliaConfig {
             require(transcripts[credentialId].university == msg.sender, "Only issuing university can revoke");
             transcripts[credentialId].isActive = FHE.asEbool(false);
         }
+    }
+    
+    // Function to get encrypted diploma data for decryption
+    function getDiplomaEncryptedData(uint256 diplomaId) public view returns (
+        bytes32 studentId,
+        bytes32 graduationYear,
+        bytes32 gpa,
+        bytes32 degreeType,
+        bytes32 isVerified,
+        bytes32 isActive
+    ) {
+        Diploma storage diploma = diplomas[diplomaId];
+        return (
+            FHE.toBytes32(diploma.studentId),
+            FHE.toBytes32(diploma.graduationYear),
+            FHE.toBytes32(diploma.gpa),
+            FHE.toBytes32(diploma.degreeType),
+            FHE.toBytes32(diploma.isVerified),
+            FHE.toBytes32(diploma.isActive)
+        );
+    }
+    
+    // Function to get encrypted transcript data for decryption
+    function getTranscriptEncryptedData(uint256 transcriptId) public view returns (
+        bytes32 studentId,
+        bytes32 totalCredits,
+        bytes32 completedCredits,
+        bytes32 gpa,
+        bytes32 isVerified,
+        bytes32 isActive
+    ) {
+        Transcript storage transcript = transcripts[transcriptId];
+        return (
+            FHE.toBytes32(transcript.studentId),
+            FHE.toBytes32(transcript.totalCredits),
+            FHE.toBytes32(transcript.completedCredits),
+            FHE.toBytes32(transcript.gpa),
+            FHE.toBytes32(transcript.isVerified),
+            FHE.toBytes32(transcript.isActive)
+        );
+    }
+    
+    // Function to get encrypted verification request data for decryption
+    function getVerificationRequestEncryptedData(uint256 requestId) public view returns (
+        bytes32 requestIdEnc,
+        bytes32 credentialId,
+        bytes32 isDiploma,
+        bytes32 isApproved,
+        bytes32 isCompleted
+    ) {
+        VerificationRequest storage request = verificationRequests[requestId];
+        return (
+            FHE.toBytes32(request.requestId),
+            FHE.toBytes32(request.credentialId),
+            FHE.toBytes32(request.isDiploma),
+            FHE.toBytes32(request.isApproved),
+            FHE.toBytes32(request.isCompleted)
+        );
     }
 }

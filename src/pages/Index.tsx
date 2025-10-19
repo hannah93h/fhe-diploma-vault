@@ -7,6 +7,8 @@ import CertificateCard from "@/components/credentials/CertificateCard";
 import CertificateDetailModal from "@/components/credentials/CertificateDetailModal";
 import EmployerVerification from "@/components/verification/EmployerVerification";
 import Header from "@/components/layout/Header";
+import { useZamaInstance } from "@/hooks/useZamaInstance";
+import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { GraduationCap, Shield, Users, Award, Lock, Search } from "lucide-react";
 import universityHero from "@/assets/university-hero.jpg";
 import certificateIcon from "@/assets/certificate-icon.jpg";
@@ -15,6 +17,9 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("student");
   const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
+  const { instance, isLoading: fheLoading, error: fheError } = useZamaInstance();
+  const { isEncrypting, isDecrypting } = useFHEEncryption();
 
   const mockCredentials = [
     {
@@ -100,15 +105,28 @@ const Index = () => {
               verifiable only through Fully Homomorphic Encryption queries
             </p>
             <div className="flex flex-wrap justify-center gap-4 mt-8">
-              <Button variant="certificate" size="xl">
+              <Button variant="certificate" size="xl" disabled={fheLoading || !instance}>
                 <GraduationCap className="w-5 h-5 mr-2" />
-                Access Credentials
+                {fheLoading ? 'Initializing FHE...' : 'Access Credentials'}
               </Button>
               <Button variant="outline" size="xl" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-academic-navy">
                 <Shield className="w-5 h-5 mr-2" />
                 Learn About FHE
               </Button>
             </div>
+            
+            {/* FHE Status Display */}
+            {fheError && (
+              <div className="mt-4 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">
+                <strong>FHE Initialization Error:</strong> {fheError}
+              </div>
+            )}
+            
+            {instance && (
+              <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-lg text-green-700">
+                <strong>FHE Encryption Ready:</strong> Your data will be encrypted with Fully Homomorphic Encryption
+              </div>
+            )}
           </div>
         </div>
       </section>
