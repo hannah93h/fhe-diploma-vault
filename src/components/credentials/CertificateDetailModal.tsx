@@ -2,8 +2,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/enhanced-button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   GraduationCap, 
   Shield, 
@@ -12,15 +10,9 @@ import {
   MapPin, 
   Clock, 
   Download, 
-  Share2,
   Lock,
-  Hash,
-  Globe,
-  QrCode,
-  Copy,
-  ExternalLink
+  Hash
 } from "lucide-react";
-import { useState } from "react";
 
 interface CertificateDetailModalProps {
   isOpen: boolean;
@@ -41,66 +33,16 @@ interface CertificateDetailModalProps {
     issueDate?: string;
     blockchainHash?: string;
     encryptionLevel?: string;
-    verificationId?: string;
-    shareableCode?: string;
-    publicVerificationUrl?: string;
   };
-  onShare?: () => void;
-  onGenerateQR?: () => void;
 }
 
 const CertificateDetailModal = ({ 
   isOpen, 
   onClose, 
-  certificate, 
-  onShare, 
-  onGenerateQR 
+  certificate
 }: CertificateDetailModalProps) => {
-  const [shareableLink, setShareableLink] = useState("");
-  const [qrCodeData, setQrCodeData] = useState("");
-
   const handleDownload = () => {
     console.log("Downloading certificate...");
-  };
-
-  const handleShare = () => {
-    if (certificate.publicVerificationUrl) {
-      setShareableLink(certificate.publicVerificationUrl);
-      navigator.clipboard.writeText(certificate.publicVerificationUrl);
-      alert("Verification link copied to clipboard!");
-    } else if (onShare) {
-      onShare();
-    }
-  };
-
-  const handleGenerateQR = () => {
-    if (certificate.shareableCode) {
-      const qrData = {
-        type: "FHE_DIPLOMA_VERIFICATION",
-        diplomaId: certificate.blockchainHash,
-        verificationCode: certificate.shareableCode,
-        verificationUrl: certificate.publicVerificationUrl,
-        timestamp: Date.now()
-      };
-      setQrCodeData(JSON.stringify(qrData, null, 2));
-      if (onGenerateQR) {
-        onGenerateQR();
-      }
-    }
-  };
-
-  const handleCopyVerificationCode = () => {
-    if (certificate.shareableCode) {
-      navigator.clipboard.writeText(certificate.shareableCode);
-      alert("Verification code copied to clipboard!");
-    }
-  };
-
-  const handleCopyBlockchainHash = () => {
-    if (certificate.blockchainHash) {
-      navigator.clipboard.writeText(certificate.blockchainHash);
-      alert("Blockchain hash copied to clipboard!");
-    }
   };
 
   return (
@@ -191,32 +133,17 @@ const CertificateDetailModal = ({
 
                 {certificate.blockchainHash && (
                   <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Blockchain Hash</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={certificate.blockchainHash} 
-                        readOnly 
-                        className="font-mono text-xs"
-                      />
-                      <Button size="sm" variant="outline" onClick={handleCopyBlockchainHash}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
+                    <span className="text-sm text-muted-foreground">Blockchain Hash</span>
+                    <p className="text-xs font-mono text-academic-navy break-all">{certificate.blockchainHash}</p>
                   </div>
                 )}
 
-                {certificate.shareableCode && (
-                  <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Verification Code</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={certificate.shareableCode} 
-                        readOnly 
-                        className="font-mono text-xs"
-                      />
-                      <Button size="sm" variant="outline" onClick={handleCopyVerificationCode}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
+                {certificate.issueDate && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-academic-gold" />
+                    <div>
+                      <span className="text-sm text-muted-foreground">Issue Date</span>
+                      <p className="font-semibold">{certificate.issueDate}</p>
                     </div>
                   </div>
                 )}
@@ -260,87 +187,11 @@ const CertificateDetailModal = ({
             </>
           )}
 
-          {/* Share and Verification Actions */}
-          <Separator />
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-academic-navy">Share & Verification</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Button 
-                  variant="academic" 
-                  className="w-full" 
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share for Verification
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleGenerateQR}
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Generate QR Code
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleDownload}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Certificate
-                </Button>
-                
-                {certificate.publicVerificationUrl && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => window.open(certificate.publicVerificationUrl, '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View Public Verification
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Shareable Link Display */}
-            {shareableLink && (
-              <div className="p-4 bg-academic-navy/5 rounded-lg">
-                <Label className="text-sm font-medium text-academic-navy">Shareable Verification Link</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input 
-                    value={shareableLink} 
-                    readOnly 
-                    className="font-mono text-xs"
-                  />
-                  <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(shareableLink)}>
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* QR Code Data Display */}
-            {qrCodeData && (
-              <div className="p-4 bg-academic-navy/5 rounded-lg">
-                <Label className="text-sm font-medium text-academic-navy">QR Code Data</Label>
-                <div className="mt-2 p-3 bg-white rounded border">
-                  <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">
-                    {qrCodeData}
-                  </pre>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={handleDownload}>
+              Download Certificate
+            </Button>
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>

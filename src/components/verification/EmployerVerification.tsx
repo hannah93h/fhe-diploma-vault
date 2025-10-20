@@ -4,26 +4,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/enhanced-button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Search, Shield, Building, CheckCircle, AlertCircle, Copy, Eye, Lock } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 
 const EmployerVerification = () => {
-  const [verificationInput, setVerificationInput] = useState("");
+  const [studentAddress, setStudentAddress] = useState("");
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string>("");
-  const [verificationMethod, setVerificationMethod] = useState<"address" | "link" | "qr">("address");
   
   const { address } = useAccount();
   const { instance } = useZamaInstance();
   const { isDecrypting } = useFHEEncryption();
 
   const handleVerification = async () => {
-    if (!verificationInput.trim()) {
-      setVerificationError("Please enter a verification input");
+    if (!studentAddress.trim()) {
+      setVerificationError("Please enter a student wallet address");
       return;
     }
 
@@ -46,7 +44,7 @@ const EmployerVerification = () => {
 
       // Mock verification result (only public data, no sensitive information)
       const mockResult = {
-        studentAddress: verificationInput,
+        studentAddress,
         verified: true,
         verificationTimestamp: Date.now(),
         encryptionLevel: "FHE-256",
@@ -129,73 +127,28 @@ Verification Hash: ${verificationResult.verificationHash}`;
             <div>
               <h3 className="text-xl font-semibold text-academic-navy">Employer Verification Portal</h3>
               <p className="text-sm text-muted-foreground">
-                Verify educational credentials through FHE queries (privacy-preserving)
+                Verify educational credentials by wallet address (privacy-preserving)
               </p>
             </div>
           </div>
 
-          {/* Verification Method Selection */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Verification Method</Label>
-            <div className="flex gap-2">
-              <Button
-                variant={verificationMethod === "address" ? "academic" : "outline"}
-                size="sm"
-                onClick={() => setVerificationMethod("address")}
-              >
-                Wallet Address
-              </Button>
-              <Button
-                variant={verificationMethod === "link" ? "academic" : "outline"}
-                size="sm"
-                onClick={() => setVerificationMethod("link")}
-              >
-                Verification Link
-              </Button>
-              <Button
-                variant={verificationMethod === "qr" ? "academic" : "outline"}
-                size="sm"
-                onClick={() => setVerificationMethod("qr")}
-              >
-                QR Code
-              </Button>
-            </div>
-          </div>
-
-          {/* Input Field */}
           <div className="space-y-3">
             <div>
-              <Label htmlFor="verification-input" className="text-sm font-medium">
-                {verificationMethod === "address" && "Student Wallet Address"}
-                {verificationMethod === "link" && "Verification Link"}
-                {verificationMethod === "qr" && "QR Code Data"}
+              <Label htmlFor="student-address" className="text-sm font-medium">
+                Student Wallet Address
               </Label>
               <div className="flex gap-2 mt-1">
-                {verificationMethod === "link" || verificationMethod === "qr" ? (
-                  <Textarea
-                    id="verification-input"
-                    placeholder={
-                      verificationMethod === "link" 
-                        ? "https://fhe-diploma-vault.vercel.app/verify/0x..." 
-                        : '{"type":"FHE_DIPLOMA_VERIFICATION","diplomaId":"0x...","studentAddress":"0x..."}'
-                    }
-                    value={verificationInput}
-                    onChange={(e) => setVerificationInput(e.target.value)}
-                    className="font-mono text-sm min-h-[80px]"
-                  />
-                ) : (
-                  <Input
-                    id="verification-input"
-                    placeholder="0x..."
-                    value={verificationInput}
-                    onChange={(e) => setVerificationInput(e.target.value)}
-                    className="font-mono text-sm"
-                  />
-                )}
+                <Input
+                  id="student-address"
+                  placeholder="0x..."
+                  value={studentAddress}
+                  onChange={(e) => setStudentAddress(e.target.value)}
+                  className="font-mono text-sm"
+                />
                 <Button 
                   variant="academic" 
                   onClick={handleVerification}
-                  disabled={!verificationInput || isVerifying}
+                  disabled={!studentAddress || isVerifying}
                 >
                   <Search className="w-4 h-4 mr-2" />
                   {isVerifying ? "Verifying..." : "Verify"}

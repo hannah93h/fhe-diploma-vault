@@ -12,7 +12,7 @@ import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useDiplomaManagement } from "@/hooks/useDiplomaManagement";
 import { useAccount } from "wagmi";
-import { GraduationCap, Users, Shield, Plus, Eye, Share2, QrCode } from "lucide-react";
+import { GraduationCap, Users, Shield, Plus, Eye } from "lucide-react";
 import certificateIcon from "@/assets/certificate-icon.jpg";
 
 const Verification = () => {
@@ -53,10 +53,7 @@ const Verification = () => {
       "Machine Learning", 
       "Distributed Systems",
       "Computer Vision"
-    ],
-    verificationId: `VERIFY_${diploma.diplomaId}`,
-    shareableCode: `FHE_${diploma.diplomaId}`,
-    publicVerificationUrl: `${window.location.origin}/verify/${diploma.diplomaId}`
+    ]
   }));
 
   const handleViewDetails = (certificate: any) => {
@@ -67,24 +64,6 @@ const Verification = () => {
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedCertificate(null);
-  };
-
-  const handleShareCredential = (certificate: any) => {
-    const verificationUrl = `${window.location.origin}/verify/${certificate.blockchainHash}`;
-    navigator.clipboard.writeText(verificationUrl);
-    alert(`Verification link copied to clipboard: ${verificationUrl}`);
-  };
-
-  const handleGenerateQR = (certificate: any) => {
-    const qrData = {
-      type: "FHE_DIPLOMA_VERIFICATION",
-      diplomaId: certificate.blockchainHash,
-      studentAddress: address,
-      verificationUrl: certificate.publicVerificationUrl,
-      timestamp: Date.now()
-    };
-    console.log("QR Code Data:", qrData);
-    alert("QR Code generated! (In a real implementation, this would show a QR code)");
   };
 
   return (
@@ -204,8 +183,6 @@ const Verification = () => {
                           key={index}
                           certificate={credential}
                           onViewDetails={() => handleViewDetails(credential)}
-                          onShare={() => handleShareCredential(credential)}
-                          onGenerateQR={() => handleGenerateQR(credential)}
                         />
                       ))
                     )}
@@ -243,18 +220,18 @@ const Verification = () => {
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-academic-navy">Employer Verification</h2>
-                      <p className="text-muted-foreground">Verify educational credentials through FHE queries</p>
+                      <p className="text-muted-foreground">Verify educational credentials by wallet address</p>
                     </div>
                   </div>
 
-                  {/* Verification Process Flow */}
+                  {/* Simple Verification Process */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <Card className="p-4 text-center border-2 border-academic-gold">
                       <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-academic-navy to-primary rounded-full flex items-center justify-center">
-                        <Share2 className="w-6 h-6 text-primary-foreground" />
+                        <Users className="w-6 h-6 text-primary-foreground" />
                       </div>
-                      <h3 className="font-semibold text-academic-navy mb-2">1. Student Shares</h3>
-                      <p className="text-sm text-muted-foreground">Student provides verification link or QR code</p>
+                      <h3 className="font-semibold text-academic-navy mb-2">1. Enter Address</h3>
+                      <p className="text-sm text-muted-foreground">Enter student's wallet address</p>
                     </Card>
                     
                     <Card className="p-4 text-center border-2 border-academic-gold">
@@ -289,8 +266,6 @@ const Verification = () => {
           certificate={selectedCertificate}
           isOpen={isDetailModalOpen}
           onClose={handleCloseDetailModal}
-          onShare={() => handleShareCredential(selectedCertificate)}
-          onGenerateQR={() => handleGenerateQR(selectedCertificate)}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/enhanced-button";
-import { GraduationCap, Shield, Calendar, Award, Share2, QrCode, Eye } from "lucide-react";
+import { GraduationCap, Shield, Calendar, Award, Eye } from "lucide-react";
 
 interface CertificateCardProps {
   certificate: {
@@ -20,20 +20,13 @@ interface CertificateCardProps {
     issueDate?: string;
     blockchainHash?: string;
     encryptionLevel?: string;
-    verificationId?: string;
-    shareableCode?: string;
-    publicVerificationUrl?: string;
   };
   onViewDetails: () => void;
-  onShare?: () => void;
-  onGenerateQR?: () => void;
 }
 
 const CertificateCard = ({ 
   certificate,
-  onViewDetails,
-  onShare,
-  onGenerateQR
+  onViewDetails
 }: CertificateCardProps) => {
   const handleDownload = () => {
     console.log("Downloading certificate...");
@@ -96,14 +89,6 @@ const CertificateCard = ({
         )}
       </div>
 
-      {/* Verification Info */}
-      {certificate.shareableCode && (
-        <div className="mb-4 p-3 bg-academic-navy/5 rounded-lg">
-          <div className="text-xs text-muted-foreground mb-1">Verification Code</div>
-          <div className="text-xs font-mono text-academic-navy">{certificate.shareableCode}</div>
-        </div>
-      )}
-
       {/* Certificate Actions */}
       <div className="flex gap-2">
         <Button variant="academic" size="sm" className="flex-1" onClick={onViewDetails}>
@@ -113,32 +98,6 @@ const CertificateCard = ({
         <Button variant="outline" size="sm" onClick={handleDownload}>
           Download
         </Button>
-      </div>
-
-      {/* Share Actions */}
-      <div className="flex gap-2 mt-3">
-        {onShare && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1" 
-            onClick={onShare}
-          >
-            <Share2 className="w-3 h-3 mr-1" />
-            Share for Verification
-          </Button>
-        )}
-        {onGenerateQR && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1" 
-            onClick={onGenerateQR}
-          >
-            <QrCode className="w-3 h-3 mr-1" />
-            Generate QR
-          </Button>
-        )}
       </div>
 
       {/* Decorative Border */}
