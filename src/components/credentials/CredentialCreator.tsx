@@ -138,6 +138,7 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
 
       // Call the contract function
       const result = await contractCreateDiploma(
+        contractAddress,
         diplomaData.studentId,
         diplomaData.universityName,
         diplomaData.degreeName,

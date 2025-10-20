@@ -524,6 +524,7 @@ export const useCreateDiploma = () => {
   });
 
   const createDiploma = async (
+    contractAddress: `0x${string}`,
     studentId: string,
     universityName: string,
     degreeName: string,
@@ -534,15 +535,13 @@ export const useCreateDiploma = () => {
     encryptedDegreeType: `0x${string}`,
     inputProof: `0x${string}`
   ) => {
-    const { contractAddress, abi } = useFHEDiplomaVault();
-    
     if (!contractAddress) {
-      throw new Error('Contract not deployed on this network');
+      throw new Error('Contract address is required');
     }
 
     return writeContractAsync({
       address: contractAddress,
-      abi,
+      abi: FHEDiplomaVaultABI,
       functionName: 'createDiploma',
       args: [
         studentId,
