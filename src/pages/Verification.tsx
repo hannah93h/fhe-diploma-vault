@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/enhanced-button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CertificateCard from "@/components/credentials/CertificateCard";
-import CertificateDetailModal from "@/components/credentials/CertificateDetailModal";
 import CredentialCreator from "@/components/credentials/CredentialCreator";
 import UniversityAdminPanel from "@/components/admin/UniversityAdminPanel";
 import EmployerVerification from "@/components/verification/EmployerVerification";
@@ -17,8 +16,6 @@ import certificateIcon from "@/assets/certificate-icon.jpg";
 
 const Verification = () => {
   const [activeTab, setActiveTab] = useState("student");
-  const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
   
   const { address } = useAccount();
@@ -36,14 +33,9 @@ const Verification = () => {
   // Use diplomas directly as credentials for CertificateCard
   const credentials = diplomas;
 
-  const handleViewDetails = (certificate: any) => {
-    setSelectedCertificate(certificate);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedCertificate(null);
+  const handleDecrypt = (certificate: any) => {
+    console.log("Decrypting certificate:", certificate);
+    // TODO: Implement FHE decryption logic here
   };
 
   return (
@@ -162,7 +154,7 @@ const Verification = () => {
                         <CertificateCard
                           key={index}
                           certificate={credential}
-                          onViewDetails={() => handleViewDetails(credential)}
+                          onDecrypt={() => handleDecrypt(credential)}
                         />
                       ))
                     )}
@@ -240,14 +232,6 @@ const Verification = () => {
         </div>
       </section>
 
-      {/* Certificate Detail Modal */}
-      {isDetailModalOpen && selectedCertificate && (
-        <CertificateDetailModal
-          certificate={selectedCertificate}
-          isOpen={isDetailModalOpen}
-          onClose={handleCloseDetailModal}
-        />
-      )}
     </div>
   );
 };

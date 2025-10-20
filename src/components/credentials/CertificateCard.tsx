@@ -6,7 +6,7 @@ import { GraduationCap, Shield, Calendar, Award, Eye } from "lucide-react";
 interface CertificateCardProps {
   certificate: {
     diplomaId: number;
-    studentId: string;
+    studentId: number;
     universityName: string;
     degreeName: string;
     major: string;
@@ -18,13 +18,11 @@ interface CertificateCardProps {
     ipfsHash: string;
     isEncrypted?: boolean;
   };
-  onViewDetails: () => void;
   onDecrypt?: () => void;
 }
 
 const CertificateCard = ({ 
   certificate,
-  onViewDetails,
   onDecrypt
 }: CertificateCardProps) => {
   const handleDownload = () => {
@@ -35,11 +33,15 @@ const CertificateCard = ({
   console.log("CertificateCard received certificate:", certificate);
 
   const formatDate = (timestamp: number) => {
-    if (!timestamp || timestamp === 0) return 'N/A';
+    if (!timestamp || timestamp === 0 || isNaN(timestamp)) return 'N/A';
     try {
       // Handle both Unix timestamp (seconds) and milliseconds
       const date = timestamp > 1e10 ? new Date(timestamp) : new Date(timestamp * 1000);
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
     } catch (error) {
       console.error('Date formatting error:', error, 'timestamp:', timestamp);
       return 'Invalid Date';
@@ -91,8 +93,8 @@ const CertificateCard = ({
         </div>
         
         <div className="text-sm">
-          <span className="text-muted-foreground">GPA: </span>
-          <span className="font-semibold text-academic-navy">{certificate.gpa > 0 ? `${certificate.gpa}/4.0` : 'N/A'}</span>
+          <span className="text-muted-foreground">Student ID: </span>
+          <span className="font-semibold text-academic-navy">{certificate.studentId.toString()}</span>
         </div>
 
         <div className="text-sm">
@@ -100,27 +102,38 @@ const CertificateCard = ({
           <span className="font-semibold text-academic-navy">{certificate.major}</span>
         </div>
 
-        <div className="text-xs text-muted-foreground flex items-center gap-1">
-          <Shield className="w-3 h-3" />
-          <span>Encrypted with FHE-256</span>
+        {/* Encrypted Fields */}
+        <div className="border-t border-academic-gold/20 pt-3 mt-3">
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+            <Shield className="w-3 h-3" />
+            <span>Encrypted with FHE-256</span>
+          </div>
+          
+          <div className="text-sm">
+            <span className="text-muted-foreground">GPA: </span>
+            <span className="font-semibold text-academic-navy">{certificate.gpa > 0 ? `${certificate.gpa}/4.0` : 'N/A'}</span>
+          </div>
+
+          <div className="text-sm">
+            <span className="text-muted-foreground">Graduation Year: </span>
+            <span className="font-semibold text-academic-navy">{certificate.graduationYear > 0 ? certificate.graduationYear : 'N/A'}</span>
+          </div>
+
+          <div className="text-sm">
+            <span className="text-muted-foreground">Degree Type: </span>
+            <span className="font-semibold text-academic-navy">{getDegreeTypeName(certificate.degreeType)}</span>
+          </div>
         </div>
       </div>
 
       {/* Certificate Actions */}
       <div className="flex gap-2">
-        <Button variant="academic" size="sm" className="flex-1" onClick={onViewDetails}>
-          <Eye className="w-3 h-3 mr-1" />
-          View Details
-        </Button>
         {onDecrypt && (
-          <Button variant="outline" size="sm" onClick={onDecrypt}>
+          <Button variant="academic" size="sm" className="flex-1" onClick={onDecrypt}>
             <Shield className="w-3 h-3 mr-1" />
-            Decrypt
+            解密查看Detail
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={handleDownload}>
-          Download
-        </Button>
       </div>
 
       {/* Decorative Border */}
