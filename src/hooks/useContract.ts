@@ -595,19 +595,6 @@ export const useGetUniversityInfo = (universityId: bigint) => {
   });
 };
 
-export const useGetDiplomaEncryptedData = (diplomaId: bigint) => {
-  const { contractAddress, abi } = useFHEDiplomaVault();
-
-  return useReadContract({
-    address: contractAddress,
-    abi,
-    functionName: 'getDiplomaEncryptedData',
-    args: [diplomaId],
-    query: {
-      enabled: !!contractAddress && !!diplomaId,
-    },
-  });
-};
 
 export const useGetTranscriptEncryptedData = (transcriptId: bigint) => {
   const { contractAddress, abi } = useFHEDiplomaVault();
