@@ -85,7 +85,12 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
     
     try {
       // Create encrypted input using FHE
-      const input = instance.createEncryptedInput(process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || '', address);
+      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS;
+      if (!contractAddress) {
+        alert('Contract address not configured');
+        return;
+      }
+      const input = instance.createEncryptedInput(contractAddress, address);
       
       // Add encrypted values
       input.add32(parseInt(formData.studentId));
