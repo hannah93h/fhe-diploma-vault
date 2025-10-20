@@ -136,6 +136,33 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
       
       const encryptedInput = await input.encrypt();
 
+      // Convert Uint8Array handles to 32-byte hex strings
+      const convertToBytes32 = (handle: Uint8Array): string => {
+        const hex = `0x${Array.from(handle)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')}`;
+        // Ensure exactly 32 bytes (66 characters including 0x)
+        if (hex.length < 66) {
+          return hex.padEnd(66, '0');
+        } else if (hex.length > 66) {
+          return hex.substring(0, 66);
+        }
+        return hex;
+      };
+
+      const gpaHandle = convertToBytes32(encryptedInput.handles[0]);
+      const graduationYearHandle = convertToBytes32(encryptedInput.handles[1]);
+      const degreeTypeHandle = convertToBytes32(encryptedInput.handles[2]);
+      const proof = `0x${Array.from(encryptedInput.inputProof as Uint8Array)
+        .map(b => b.toString(16).padStart(2, '0')).join('')}`;
+
+      console.log('Encrypted handles:', {
+        gpaHandle,
+        graduationYearHandle,
+        degreeTypeHandle,
+        proofLength: proof.length
+      });
+
       // Call the contract function
       const result = await contractCreateDiploma(
         contractAddress,
@@ -144,10 +171,10 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
         diplomaData.degreeName,
         diplomaData.major,
         diplomaData.ipfsHash,
-        encryptedInput.handles[0], // encryptedGpa
-        encryptedInput.handles[1], // encryptedGraduationYear
-        encryptedInput.handles[2], // encryptedDegreeType
-        encryptedInput.inputProof
+        gpaHandle,
+        graduationYearHandle,
+        degreeTypeHandle,
+        proof
       );
 
       console.log('Diploma creation result:', result);
