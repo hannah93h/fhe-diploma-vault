@@ -1,60 +1,88 @@
-const { ethers } = require("hardhat");
+import pkg from 'hardhat';
+const { ethers } = pkg;
 
 async function main() {
   console.log("Initializing FHE Diploma Vault...");
 
-  // Get the contract
+  // Connect to the already deployed contract
+  const contractAddress = "0x2766111e6825D84147B75b10C32CC3F25342086E";
   const FHEDiplomaVault = await ethers.getContractFactory("FHEDiplomaVault");
+  const contract = FHEDiplomaVault.attach(contractAddress);
   
-  // Deploy the contract (if not already deployed)
-  const verifierAddress = "0x0000000000000000000000000000000000000000"; // Placeholder verifier
-  const contract = await FHEDiplomaVault.deploy(verifierAddress);
-  await contract.waitForDeployment();
-  
-  const contractAddress = await contract.getAddress();
-  console.log("Contract deployed at:", contractAddress);
+  console.log("Connected to contract at:", contractAddress);
 
   // Set admin address
   const adminAddress = "0x1C7EF492E796A6e0DD3521a299A0836B26D5E73C";
   
-  // Register some universities
+  // Add admin if not already added
+  try {
+    const isAdmin = await contract.isAdmin(adminAddress);
+    if (!isAdmin) {
+      console.log("Adding admin address...");
+      const addAdminTx = await contract.addAdmin(adminAddress);
+      await addAdminTx.wait();
+      console.log("Admin address added");
+    } else {
+      console.log("Admin address already exists");
+    }
+  } catch (error) {
+    console.log("Error adding admin:", error.message);
+  }
+
+  // Register universities using adminRegisterUniversity
   console.log("Registering universities...");
   
-  // Harvard University
-  const harvardTx = await contract.registerUniversity(
-    "Harvard University",
-    "United States",
-    "New England Commission of Higher Education"
-  );
-  await harvardTx.wait();
-  console.log("Harvard University registered");
+  try {
+    // Harvard University
+    const harvardTx = await contract.registerUniversity(
+      "Harvard University",
+      "United States",
+      adminAddress
+    );
+    await harvardTx.wait();
+    console.log("Harvard University registered");
+  } catch (error) {
+    console.log("Error registering Harvard:", error.message);
+  }
 
-  // MIT
-  const mitTx = await contract.registerUniversity(
-    "Massachusetts Institute of Technology",
-    "United States", 
-    "New England Commission of Higher Education"
-  );
-  await mitTx.wait();
-  console.log("MIT registered");
+  try {
+    // MIT
+    const mitTx = await contract.registerUniversity(
+      "Massachusetts Institute of Technology",
+      "United States",
+      adminAddress
+    );
+    await mitTx.wait();
+    console.log("MIT registered");
+  } catch (error) {
+    console.log("Error registering MIT:", error.message);
+  }
 
-  // Stanford University
-  const stanfordTx = await contract.registerUniversity(
-    "Stanford University",
-    "United States",
-    "Western Association of Schools and Colleges"
-  );
-  await stanfordTx.wait();
-  console.log("Stanford University registered");
+  try {
+    // Stanford University
+    const stanfordTx = await contract.registerUniversity(
+      "Stanford University",
+      "United States",
+      adminAddress
+    );
+    await stanfordTx.wait();
+    console.log("Stanford University registered");
+  } catch (error) {
+    console.log("Error registering Stanford:", error.message);
+  }
 
-  // University of Cambridge
-  const cambridgeTx = await contract.registerUniversity(
-    "University of Cambridge",
-    "United Kingdom",
-    "Quality Assurance Agency for Higher Education"
-  );
-  await cambridgeTx.wait();
-  console.log("University of Cambridge registered");
+  try {
+    // University of Cambridge
+    const cambridgeTx = await contract.registerUniversity(
+      "University of Cambridge",
+      "United Kingdom",
+      adminAddress
+    );
+    await cambridgeTx.wait();
+    console.log("University of Cambridge registered");
+  } catch (error) {
+    console.log("Error registering Cambridge:", error.message);
+  }
 
   console.log("Initialization complete!");
   console.log("Contract Address:", contractAddress);
@@ -67,4 +95,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

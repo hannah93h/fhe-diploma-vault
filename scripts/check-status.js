@@ -5,7 +5,7 @@ async function main() {
   console.log("Checking contract status...");
 
   // Connect to the deployed contract
-  const contractAddress = "0x29929D68b86195a2fAA8fb38D3103D644a23Cfb8";
+  const contractAddress = "0x38BE817Bfc574E5b2fDeeC3f303ff9fe9c032425";
   const FHEDiplomaVault = await ethers.getContractFactory("FHEDiplomaVault");
   const contract = FHEDiplomaVault.attach(contractAddress);
   

@@ -1,4 +1,11 @@
-const { ethers } = require("hardhat");
+import pkg from 'hardhat';
+const { ethers } = pkg;
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function main() {
   console.log("Deploying FHEDiplomaVault contract...");
@@ -6,9 +13,8 @@ async function main() {
   // Get the contract factory
   const FHEDiplomaVault = await ethers.getContractFactory("FHEDiplomaVault");
   
-  // Deploy the contract with a verifier address (you can use your own address for testing)
-  const verifierAddress = "0x3c7fae276c590a8df81ed320851c53db4bc39916"; // Replace with actual verifier address
-  const fheDiplomaVault = await FHEDiplomaVault.deploy(verifierAddress);
+  // Deploy the contract (no constructor parameters needed)
+  const fheDiplomaVault = await FHEDiplomaVault.deploy();
 
   await fheDiplomaVault.waitForDeployment();
 
@@ -16,10 +22,6 @@ async function main() {
   console.log("FHEDiplomaVault deployed to:", contractAddress);
   
   // Update the contract address in the frontend
-  const fs = require('fs');
-  const path = require('path');
-  
-  // Update contracts.ts
   const contractsPath = path.join(__dirname, '../src/lib/contracts.ts');
   let contractsContent = fs.readFileSync(contractsPath, 'utf8');
   contractsContent = contractsContent.replace(

@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
-import "@fhevm/solidity/FHE.sol";
+import { SepoliaConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
+import { euint32, externalEuint32, euint8, externalEuint8, ebool, externalEbool, eaddress, externalEaddress, FHE } from "@fhevm/solidity/lib/FHE.sol";
 
-contract FHEDiplomaVault {
+contract FHEDiplomaVault is SepoliaConfig {
+    using FHE for *;
+    
     // Diploma struct with FHE encrypted data
     struct Diploma {
         uint256 diplomaId;           // Public ID
@@ -20,7 +23,6 @@ contract FHEDiplomaVault {
         euint32 encryptedGpa;        // Encrypted GPA
         euint32 encryptedGraduationYear; // Encrypted graduation year
         euint8 encryptedDegreeType;   // Encrypted degree type (1=Bachelor, 2=Master, 3=PhD)
-        ebool encryptedIsApproved;   // Encrypted approval status
     }
 
     // University struct
@@ -103,7 +105,7 @@ contract FHEDiplomaVault {
     ) public onlyAdmin returns (uint256) {
         require(bytes(_name).length > 0, "University name cannot be empty");
         require(_admin != address(0), "Invalid admin address");
-        require(!isUniversityAdmin[_admin], "Address already registered as university admin");
+        // Allow re-registration of university admins
         
         uint256 universityId = universityCounter++;
         
@@ -132,7 +134,7 @@ contract FHEDiplomaVault {
         externalEuint32 _encryptedGpa,
         externalEuint32 _encryptedGraduationYear,
         externalEuint8 _encryptedDegreeType,
-        externalEbool _encryptedIsApproved
+        bytes calldata inputProof
     ) public returns (uint256) {
         require(bytes(_studentId).length > 0, "Student ID cannot be empty");
         require(bytes(_universityName).length > 0, "University name cannot be empty");
@@ -140,25 +142,60 @@ contract FHEDiplomaVault {
         
         uint256 diplomaId = diplomaCounter++;
         
-        diplomas[diplomaId] = Diploma({
-            diplomaId: diplomaId,
-            studentId: _studentId,
-            universityName: _universityName,
-            degreeName: _degreeName,
-            major: _major,
-            ipfsHash: _ipfsHash,
-            studentAddress: msg.sender,
-            issueDate: block.timestamp,
-            isVerified: false,
-            encryptedGpa: FHE.fromExternal(_encryptedGpa),
-            encryptedGraduationYear: FHE.fromExternal(_encryptedGraduationYear),
-            encryptedDegreeType: FHE.fromExternal(_encryptedDegreeType),
-            encryptedIsApproved: FHE.fromExternal(_encryptedIsApproved)
-        });
+        // Convert external FHE types to internal types with proof validation
+        euint32 internalGpa = FHE.fromExternal(_encryptedGpa, inputProof);
+        euint32 internalGraduationYear = FHE.fromExternal(_encryptedGraduationYear, inputProof);
+        euint8 internalDegreeType = FHE.fromExternal(_encryptedDegreeType, inputProof);
+        
+        // Set diploma data step by step
+        diplomas[diplomaId].diplomaId = diplomaId;
+        diplomas[diplomaId].studentId = _studentId;
+        diplomas[diplomaId].universityName = _universityName;
+        diplomas[diplomaId].degreeName = _degreeName;
+        diplomas[diplomaId].major = _major;
+        diplomas[diplomaId].ipfsHash = _ipfsHash;
+        diplomas[diplomaId].studentAddress = msg.sender;
+        diplomas[diplomaId].issueDate = block.timestamp;
+        diplomas[diplomaId].isVerified = false;
+        diplomas[diplomaId].encryptedGpa = internalGpa;
+        diplomas[diplomaId].encryptedGraduationYear = internalGraduationYear;
+        diplomas[diplomaId].encryptedDegreeType = internalDegreeType;
         
         studentDiplomas[msg.sender].push(diplomaId);
-        emit DiplomaCreated(diplomaId, msg.sender, _universityName);
+        emit DiplomaCreated(diplomaId, msg.sender, "University");
         return diplomaId;
+    }
+
+    // Helper function to set basic diploma data
+    function _setDiplomaBasicData(
+        uint256 _diplomaId,
+        string memory _studentId,
+        string memory _universityName,
+        string memory _degreeName,
+        string memory _major,
+        string memory _ipfsHash
+    ) internal {
+        diplomas[_diplomaId].diplomaId = _diplomaId;
+        diplomas[_diplomaId].studentId = _studentId;
+        diplomas[_diplomaId].universityName = _universityName;
+        diplomas[_diplomaId].degreeName = _degreeName;
+        diplomas[_diplomaId].major = _major;
+        diplomas[_diplomaId].ipfsHash = _ipfsHash;
+        diplomas[_diplomaId].studentAddress = msg.sender;
+        diplomas[_diplomaId].issueDate = block.timestamp;
+        diplomas[_diplomaId].isVerified = false;
+    }
+
+    // Helper function to set encrypted diploma data
+    function _setDiplomaEncryptedData(
+        uint256 _diplomaId,
+        euint32 _encryptedGpa,
+        euint32 _encryptedGraduationYear,
+        euint8 _encryptedDegreeType
+    ) internal {
+        diplomas[_diplomaId].encryptedGpa = _encryptedGpa;
+        diplomas[_diplomaId].encryptedGraduationYear = _encryptedGraduationYear;
+        diplomas[_diplomaId].encryptedDegreeType = _encryptedDegreeType;
     }
 
     // University admin verifies diploma (can decrypt)
@@ -304,8 +341,7 @@ contract FHEDiplomaVault {
     function getDiplomaEncryptedData(uint256 _diplomaId) public view onlyUniversityAdmin returns (
         euint32 encryptedGpa,
         euint32 encryptedGraduationYear,
-        euint8 encryptedDegreeType,
-        ebool encryptedIsApproved
+        euint8 encryptedDegreeType
     ) {
         require(_diplomaId < diplomaCounter, "Diploma does not exist");
         Diploma memory diploma = diplomas[_diplomaId];
@@ -313,8 +349,7 @@ contract FHEDiplomaVault {
         return (
             diploma.encryptedGpa,
             diploma.encryptedGraduationYear,
-            diploma.encryptedDegreeType,
-            diploma.encryptedIsApproved
+            diploma.encryptedDegreeType
         );
     }
 }
