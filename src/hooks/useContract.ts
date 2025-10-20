@@ -137,15 +137,33 @@ const FHEDiplomaVaultABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getAllUniversities",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "universityAddress",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "_universityId",
+        "type": "uint256"
       }
     ],
     "name": "getUniversityInfo",
     "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "universityId",
+        "type": "uint256"
+      },
       {
         "internalType": "string",
         "name": "name",
@@ -167,11 +185,6 @@ const FHEDiplomaVaultABI = [
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "registrationDate",
-        "type": "uint256"
-      },
-      {
         "internalType": "bool",
         "name": "isVerified",
         "type": "bool"
@@ -180,9 +193,141 @@ const FHEDiplomaVaultABI = [
         "internalType": "bool",
         "name": "isActive",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "registrationDate",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_diplomaId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getDiplomaEncryptedData",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "encryptedGpa",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "encryptedGraduationYear",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "encryptedDegreeType",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_transcriptId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTranscriptEncryptedData",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "encryptedGpa",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "encryptedGraduationYear",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "encryptedDegreeType",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_student",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_university",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_degreeName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_major",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_studentId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_graduationYear",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_gpa",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_degreeType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_expiryDate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_inputProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "adminCreateDiploma",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ] as const;
@@ -257,16 +402,29 @@ export const useGetTranscriptInfo = (transcriptId: bigint) => {
   });
 };
 
-export const useGetUniversityInfo = (universityAddress: `0x${string}`) => {
+export const useGetAllUniversities = () => {
+  const { contractAddress, abi } = useFHEDiplomaVault();
+
+  return useReadContract({
+    address: contractAddress,
+    abi,
+    functionName: 'getAllUniversities',
+    query: {
+      enabled: !!contractAddress,
+    },
+  });
+};
+
+export const useGetUniversityInfo = (universityId: bigint) => {
   const { contractAddress, abi } = useFHEDiplomaVault();
 
   return useReadContract({
     address: contractAddress,
     abi,
     functionName: 'getUniversityInfo',
-    args: [universityAddress],
+    args: [universityId],
     query: {
-      enabled: !!contractAddress && !!universityAddress,
+      enabled: !!contractAddress && !!universityId,
     },
   });
 };
