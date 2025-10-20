@@ -28,6 +28,15 @@ const Verification = () => {
   const signer = useEthersSigner();
   const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const { isUniversityAdmin, isLoading: isUniversityAdminLoading } = useIsUniversityAdmin();
+  
+  // Debug logging
+  console.log('🔍 Admin check:', { 
+    address, 
+    isAdmin, 
+    isAdminLoading, 
+    isUniversityAdmin, 
+    isUniversityAdminLoading 
+  });
 
   // Load user credentials when wallet connects
   useEffect(() => {

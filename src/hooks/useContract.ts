@@ -764,15 +764,25 @@ export const useCreateDiploma = () => {
 // Hook to check if user is admin
 export const useIsAdmin = () => {
   const { address } = useAccount();
+  const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault;
+  
+  console.log('🔍 useIsAdmin debug:', {
+    address,
+    contractAddress,
+    chainId: 11155111
+  });
+  
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault as `0x${string}`,
+    address: contractAddress as `0x${string}`,
     abi: FHEDiplomaVaultABI,
     functionName: 'isAdmin',
     args: [address as `0x${string}`],
     query: {
-      enabled: !!address
+      enabled: !!address && !!contractAddress
     }
   });
+
+  console.log('🔍 useIsAdmin result:', { data, isLoading, error });
 
   return {
     isAdmin: data || false,
@@ -784,15 +794,25 @@ export const useIsAdmin = () => {
 // Hook to check if user is university admin
 export const useIsUniversityAdmin = () => {
   const { address } = useAccount();
+  const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault;
+  
+  console.log('🔍 useIsUniversityAdmin debug:', {
+    address,
+    contractAddress,
+    chainId: 11155111
+  });
+  
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault as `0x${string}`,
+    address: contractAddress as `0x${string}`,
     abi: FHEDiplomaVaultABI,
     functionName: 'isUniversityAdmin',
     args: [address as `0x${string}`],
     query: {
-      enabled: !!address
+      enabled: !!address && !!contractAddress
     }
   });
+
+  console.log('🔍 useIsUniversityAdmin result:', { data, isLoading, error });
 
   return {
     isUniversityAdmin: data || false,
