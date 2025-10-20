@@ -516,6 +516,20 @@ export const useGetTranscriptEncryptedData = (transcriptId: bigint) => {
   });
 };
 
+export const useGetStudentDiplomas = (studentAddress: `0x${string}` | undefined) => {
+  const { contractAddress } = useFHEDiplomaVault();
+  
+  return useReadContract({
+    address: contractAddress,
+    abi: FHEDiplomaVaultABI,
+    functionName: 'getStudentDiplomas',
+    args: studentAddress ? [studentAddress] : undefined,
+    query: {
+      enabled: !!contractAddress && !!studentAddress,
+    },
+  });
+};
+
 export const useCreateDiploma = () => {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { writeContractAsync } = useWriteContract();

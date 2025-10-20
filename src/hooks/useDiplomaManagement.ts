@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { useZamaInstance } from './useZamaInstance';
 import { useFHEEncryption } from './useFHEEncryption';
-import { useGetDiplomaEncryptedData, useGetTranscriptEncryptedData } from './useContract';
+import { useGetDiplomaEncryptedData, useGetTranscriptEncryptedData, useGetStudentDiplomas } from './useContract';
 
 export interface DecryptedDiploma {
   diplomaId: number;
@@ -47,13 +47,21 @@ export const useDiplomaManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock diploma IDs for demonstration - in real app, these would come from user's wallet
-  const mockDiplomaIds = [1, 2];
-  const mockTranscriptIds = [1, 2];
+  // Get student diploma IDs from contract
+  const { data: diplomaIds, isLoading: isLoadingDiplomaIds, error: diplomaIdsError } = useGetStudentDiplomas(address);
 
   const loadUserCredentials = useCallback(async () => {
     if (!instance || !address) {
       setError('Wallet not connected or FHE not initialized');
+      return;
+    }
+
+    if (isLoadingDiplomaIds) {
+      return; // Wait for diploma IDs to load
+    }
+
+    if (diplomaIdsError) {
+      setError('Failed to load diploma IDs');
       return;
     }
 
@@ -64,13 +72,36 @@ export const useDiplomaManagement = () => {
       const decryptedDiplomas: DecryptedDiploma[] = [];
       const decryptedTranscripts: DecryptedTranscript[] = [];
 
-      // For now, return empty arrays since we don't have real diploma data yet
-      // In the future, this would:
-      // 1. Get diploma IDs from contract for the user
-      // 2. Fetch encrypted data for each diploma
-      // 3. Decrypt the data using FHE
-      
       console.log('Loading credentials for address:', address);
+      console.log('Diploma IDs from contract:', diplomaIds);
+      
+      if (diplomaIds && diplomaIds.length > 0) {
+        // For each diploma ID, we would need to:
+        // 1. Get the public data (university, degree, etc.)
+        // 2. Get the encrypted data (GPA, graduation year, etc.)
+        // 3. Decrypt the encrypted data
+        // For now, we'll create mock data based on the diploma IDs
+        for (let i = 0; i < diplomaIds.length; i++) {
+          const diplomaId = Number(diplomaIds[i]);
+          decryptedDiplomas.push({
+            diplomaId,
+            studentId: 12345 + i,
+            graduationYear: 2020 + i,
+            gpa: 3.5 + (i * 0.1),
+            degreeType: i % 3 + 1, // 1=Bachelor, 2=Master, 3=PhD
+            isVerified: true,
+            isActive: true,
+            universityName: `University ${i + 1}`,
+            degreeName: `Degree ${i + 1}`,
+            major: `Major ${i + 1}`,
+            student: address,
+            university: `0x${'0'.repeat(40)}`,
+            issueDate: Date.now(),
+            expiryDate: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year from now
+            ipfsHash: `QmHash${i + 1}`,
+          });
+        }
+      }
       
       setDiplomas(decryptedDiplomas);
       setTranscripts(decryptedTranscripts);
@@ -80,7 +111,7 @@ export const useDiplomaManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [instance, address]);
+  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
@@ -159,10 +190,10 @@ export const useDiplomaManagement = () => {
   };
 
   useEffect(() => {
-    if (instance && address) {
+    if (instance && address && !isLoadingDiplomaIds) {
       loadUserCredentials();
     }
-  }, [loadUserCredentials]);
+  }, [loadUserCredentials, instance, address, isLoadingDiplomaIds]);
 
   return {
     diplomas,
