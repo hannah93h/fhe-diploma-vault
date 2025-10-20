@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useDiplomaManagement } from '@/hooks/useDiplomaManagement';
 import { useZamaInstance } from '@/hooks/useZamaInstance';
-import { useCreateDiploma } from '@/hooks/useContract';
+import { useCreateDiploma, useFHEDiplomaVault } from '@/hooks/useContract';
 import { useUniversities } from '@/hooks/useUniversities';
 import { useAccount } from 'wagmi';
 import { GraduationCap, Plus, Shield, User, Building } from 'lucide-react';
@@ -124,7 +124,7 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
         throw new Error('FHE instance not initialized');
       }
 
-      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS;
+      const { contractAddress } = useFHEDiplomaVault();
       if (!contractAddress) {
         throw new Error('Contract address not configured');
       }
