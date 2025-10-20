@@ -10,6 +10,7 @@ import Header from "@/components/layout/Header";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useDiplomaManagement } from "@/hooks/useDiplomaManagement";
+import { useGetDiplomaEncryptedData } from "@/hooks/useContract";
 import { useAccount } from "wagmi";
 import { GraduationCap, Users, Shield, Plus, Eye } from "lucide-react";
 import certificateIcon from "@/assets/certificate-icon.jpg";
@@ -33,9 +34,84 @@ const Verification = () => {
   // Use diplomas directly as credentials for CertificateCard
   const credentials = diplomas;
 
-  const handleDecrypt = (certificate: any) => {
+  const handleDecrypt = async (certificate: any) => {
     console.log("Decrypting certificate:", certificate);
-    // TODO: Implement FHE decryption logic here
+    
+    if (!instance || !address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      // Get encrypted data from contract using the hook
+      const { CONTRACT_ADDRESSES } = await import('@/lib/contracts');
+      const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault;
+      
+      if (!contractAddress) {
+        alert('Contract address not configured');
+        return;
+      }
+
+      // Get encrypted data from contract using direct call
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+      
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://1rpc.io/sepolia')
+      });
+
+      // Call the contract directly with minimal ABI
+      const encryptedData = await publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: [
+          {
+            "inputs": [{"name": "_diplomaId", "type": "uint256"}],
+            "name": "getDiplomaEncryptedData",
+            "outputs": [
+              {"name": "encryptedGpa", "type": "bytes32"},
+              {"name": "encryptedGraduationYear", "type": "bytes32"},
+              {"name": "encryptedDegreeType", "type": "bytes32"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ],
+        functionName: 'getDiplomaEncryptedData',
+        args: [BigInt(certificate.diplomaId)],
+        authorizationList: []
+      });
+
+      console.log('Encrypted data from contract:', encryptedData);
+
+      // Decrypt using FHE instance
+      const handleContractPairs = [
+        { handle: encryptedData[0], contractAddress }, // GPA
+        { handle: encryptedData[1], contractAddress }, // Graduation Year
+        { handle: encryptedData[2], contractAddress }, // Degree Type
+      ];
+
+      const decryptedResult = await instance.userDecrypt(handleContractPairs);
+      
+      console.log('Decrypted result:', decryptedResult);
+      
+      // Update the certificate with decrypted data
+      const updatedCertificate = {
+        ...certificate,
+        gpa: Number(decryptedResult[0]),
+        graduationYear: Number(decryptedResult[1]),
+        degreeType: Number(decryptedResult[2])
+      };
+
+      console.log('Updated certificate with decrypted data:', updatedCertificate);
+      
+      // Show success message
+      alert(`Decryption successful!\nGPA: ${updatedCertificate.gpa}\nGraduation Year: ${updatedCertificate.graduationYear}\nDegree Type: ${updatedCertificate.degreeType}`);
+      
+    } catch (error) {
+      console.error('Decryption failed:', error);
+      alert('Decryption failed: ' + (error as Error).message);
+    }
   };
 
   return (

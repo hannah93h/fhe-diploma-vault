@@ -3,7 +3,7 @@ import { CONTRACT_ADDRESSES } from '@/lib/contracts';
 import { useChainId } from 'wagmi';
 
 // Contract ABI - This would be generated from the Solidity contract
-const FHEDiplomaVaultABI = [
+export const FHEDiplomaVaultABI = [
   {
     "inputs": [
       {
