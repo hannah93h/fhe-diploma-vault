@@ -140,8 +140,8 @@ export const useDiplomaManagement = () => {
               major: publicData.major,
               student: publicData.studentAddress,
               university: `0x${'0'.repeat(40)}`,
-              issueDate: publicData.issueDate,
-              expiryDate: publicData.issueDate + (365 * 24 * 60 * 60), // 1 year from issue date
+              issueDate: Number(publicData.issueDate),
+              expiryDate: Number(publicData.issueDate) + (365 * 24 * 60 * 60), // 1 year from issue date
               ipfsHash: publicData.ipfsHash,
             });
           }
