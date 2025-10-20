@@ -5,7 +5,7 @@ async function main() {
   console.log("Checking contract status...");
 
   // Connect to the deployed contract
-  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || '0x90E6FEba3449DEc0CD818900BBfe2592408e268D';
   
   if (!contractAddress) {
     console.error("❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS or CONTRACT_ADDRESS environment variable.");
@@ -17,7 +17,12 @@ async function main() {
   console.log("Connected to contract at:", contractAddress);
 
   // Check admin status
-  const [signer] = await ethers.getSigners();
+  const signers = await ethers.getSigners();
+  if (signers.length === 0) {
+    console.error("❌ No signers available. Please check your network configuration.");
+    process.exit(1);
+  }
+  const signer = signers[0];
   console.log("Current signer:", await signer.getAddress());
   
   const isAdmin = await contract.isAdmin(await signer.getAddress());

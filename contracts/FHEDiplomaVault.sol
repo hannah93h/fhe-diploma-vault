@@ -337,8 +337,8 @@ contract FHEDiplomaVault is SepoliaConfig {
         return universityIds;
     }
 
-    // FHE encrypted data getters (for university admins only)
-    function getDiplomaEncryptedData(uint256 _diplomaId) public view onlyUniversityAdmin returns (
+    // FHE encrypted data getters (students can decrypt their own data)
+    function getDiplomaEncryptedData(uint256 _diplomaId) public view returns (
         euint32 encryptedGpa,
         euint32 encryptedGraduationYear,
         euint8 encryptedDegreeType

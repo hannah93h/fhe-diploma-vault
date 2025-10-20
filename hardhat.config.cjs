@@ -1,5 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("@fhevm/hardhat-plugin");
+// require("@fhevm/hardhat-plugin"); // Temporarily disabled for deployment
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -27,9 +27,9 @@ const config = {
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
-  fhevm: {
-    network: "sepolia",
-  },
+  // fhevm: {
+  //   network: "sepolia",
+  // },
 };
 
 module.exports = config;

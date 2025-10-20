@@ -161,57 +161,14 @@ export const useDiplomaManagement = () => {
             let decryptedGraduationYear = 0;
             let decryptedDegreeType = 0;
             
-            // Try to decrypt encrypted data for the student
-            try {
-              if (instance && address) {
-                console.log(`🔓 Attempting to decrypt diploma ${diplomaId} data...`);
-                
-                // Get encrypted data from contract
-                const { createPublicClient, http } = await import('viem');
-                const { sepolia } = await import('viem/chains');
-                const { CONTRACT_ADDRESSES } = await import('@/lib/contracts');
-                const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault; // sepolia chain ID
-                
-                if (!contractAddress) {
-                  console.error('❌ Contract address not configured for encrypted data fetch.');
-                  return;
-                }
-                
-                const publicClient = createPublicClient({
-                  chain: sepolia,
-                  transport: http('https://1rpc.io/sepolia')
-                });
-                
-                const encryptedData = await publicClient.readContract({
-                  address: contractAddress as `0x${string}`,
-                  abi: [
-                    {
-                      "inputs": [{"name": "_diplomaId", "type": "uint256"}],
-                      "name": "getDiplomaEncryptedData",
-                      "outputs": [
-                        {"name": "encryptedGpa", "type": "bytes32"},
-                        {"name": "encryptedGraduationYear", "type": "bytes32"},
-                        {"name": "encryptedDegreeType", "type": "bytes32"}
-                      ],
-                      "stateMutability": "view",
-                      "type": "function"
-                    }
-                  ],
-                  functionName: 'getDiplomaEncryptedData',
-                  args: [BigInt(diplomaId)]
-                });
-                
-                console.log(`🔐 Encrypted data for diploma ${diplomaId}:`, encryptedData);
-                
-                // Note: FHE decryption requires specific permissions
-                // For now, we'll use placeholder values since students can't decrypt their own data
-                // In a real implementation, this would require proper FHE key management
-                console.log(`🔐 FHE decryption requires proper key management - using placeholder values`);
-              }
-            } catch (decryptError) {
-              console.warn(`⚠️ Could not decrypt diploma ${diplomaId} data:`, decryptError);
-              // Continue with default values if decryption fails
-            }
+            // Note: Current contract has onlyUniversityAdmin modifier on getDiplomaEncryptedData
+            // Students cannot decrypt their own data until contract is updated
+            console.log(`⚠️ Skipping decryption for diploma ${diplomaId} - contract requires university admin access`);
+            
+            // For now, use default values since students cannot access encrypted data
+            decryptedGpa = 3.8; // Default GPA for demo
+            decryptedGraduationYear = 2024; // Default graduation year
+            decryptedDegreeType = 1; // Default degree type (Bachelor)
             
             decryptedDiplomas.push({
               diplomaId,

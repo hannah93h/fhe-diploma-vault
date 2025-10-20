@@ -5,7 +5,7 @@ async function main() {
   console.log("Initializing FHE Diploma Vault...");
 
   // Connect to the already deployed contract
-  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || '0x90E6FEba3449DEc0CD818900BBfe2592408e268D';
   
   if (!contractAddress) {
     console.error("❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS or CONTRACT_ADDRESS environment variable.");
@@ -17,7 +17,7 @@ async function main() {
   console.log("Connected to contract at:", contractAddress);
 
   // Set admin address
-  const adminAddress = "0x1C7EF492E796A6e0DD3521a299A0836B26D5E73C";
+  const adminAddress = "0x90E6FEba3449DEc0CD818900BBfe2592408e268D";
   
   // Add admin if not already added
   try {
