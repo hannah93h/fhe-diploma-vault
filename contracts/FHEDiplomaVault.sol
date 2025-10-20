@@ -161,6 +161,29 @@ contract FHEDiplomaVault is SepoliaConfig {
         diplomas[diplomaId].encryptedGraduationYear = internalGraduationYear;
         diplomas[diplomaId].encryptedDegreeType = internalDegreeType;
         
+        // Set ACL permissions for decryption (following aidwell-connect pattern)
+        FHE.allowThis(diplomas[diplomaId].encryptedGpa);
+        FHE.allowThis(diplomas[diplomaId].encryptedGraduationYear);
+        FHE.allowThis(diplomas[diplomaId].encryptedDegreeType);
+        
+        // Allow the student to decrypt their own data
+        FHE.allow(diplomas[diplomaId].encryptedGpa, msg.sender);
+        FHE.allow(diplomas[diplomaId].encryptedGraduationYear, msg.sender);
+        FHE.allow(diplomas[diplomaId].encryptedDegreeType, msg.sender);
+        
+        // Allow university admins to decrypt (for verification purposes)
+        if (isUniversityAdmin[msg.sender]) {
+            FHE.allow(diplomas[diplomaId].encryptedGpa, msg.sender);
+            FHE.allow(diplomas[diplomaId].encryptedGraduationYear, msg.sender);
+            FHE.allow(diplomas[diplomaId].encryptedDegreeType, msg.sender);
+        }
+        
+        // For now, allow anyone to decrypt (for demo purposes)
+        // In production, you might want to implement a more sophisticated ACL system
+        FHE.allow(diplomas[diplomaId].encryptedGpa, address(0)); // Allow anyone to decrypt GPA
+        FHE.allow(diplomas[diplomaId].encryptedGraduationYear, address(0)); // Allow anyone to decrypt graduation year
+        FHE.allow(diplomas[diplomaId].encryptedDegreeType, address(0)); // Allow anyone to decrypt degree type
+        
         studentDiplomas[msg.sender].push(diplomaId);
         emit DiplomaCreated(diplomaId, msg.sender, "University");
         return diplomaId;

@@ -2,7 +2,7 @@ import { sepolia } from 'wagmi/chains';
 
 export const CONTRACT_ADDRESSES = {
   [sepolia.id]: {
-    FHEDiplomaVault: '0x90E6FEba3449DEc0CD818900BBfe2592408e268D',
+    FHEDiplomaVault: '0x3dEe389B72d2feed20BF0b0f07385dCBb35D25e5',
   },
 } as const;
 

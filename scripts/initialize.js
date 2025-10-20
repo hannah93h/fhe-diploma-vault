@@ -5,7 +5,7 @@ async function main() {
   console.log("Initializing FHE Diploma Vault...");
 
   // Connect to the already deployed contract
-  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || '0x90E6FEba3449DEc0CD818900BBfe2592408e268D';
+  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || '0x3dEe389B72d2feed20BF0b0f07385dCBb35D25e5';
   
   if (!contractAddress) {
     console.error("❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS or CONTRACT_ADDRESS environment variable.");
