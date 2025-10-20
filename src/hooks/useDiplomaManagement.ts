@@ -51,29 +51,52 @@ export const useDiplomaManagement = () => {
   const { data: diplomaIds, isLoading: isLoadingDiplomaIds, error: diplomaIdsError } = useGetStudentDiplomas(address);
 
   // For now, we'll create a simple mapping of diploma data
-  // In a real implementation, you would fetch this data from the contract
+  // Get diploma public data from contract
   const getDiplomaPublicData = async (diplomaId: number) => {
     try {
-      console.log(`🔍 Getting public data for diploma ${diplomaId}...`);
+      console.log(`🔍 Getting public data for diploma ${diplomaId} from contract...`);
       
-      // This is a simplified approach - in production you would:
-      // 1. Call the contract directly using ethers.js or similar
-      // 2. Or use a different pattern that doesn't require hooks in async functions
+      // Import required modules for contract interaction
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
       
-      // For now, return mock data that matches what was actually created
-      return {
-        diplomaId,
-        studentId: `STU${Date.now().toString().slice(-4)}`, // Generate a more realistic ID
-        universityName: 'Harvard University', // Use the actual university from creation
-        degreeName: 'Bachelor of Science', // Use the actual degree from creation
-        major: 'Computer Science', // Use the actual major from creation
-        ipfsHash: `QmHash${diplomaId}`,
-        studentAddress: address,
-        issueDate: BigInt(Math.floor(Date.now() / 1000)), // Current timestamp
-        isVerified: true
-      };
+      // Get contract address from environment or use default
+      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || '0x337F0c42c8E12689ED509c7549c3a539A2C6a7eA';
+      
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://1rpc.io/sepolia')
+      });
+      
+      const result = await publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: [
+          {
+            "inputs": [{"name": "_diplomaId", "type": "uint256"}],
+            "name": "getDiplomaPublicData",
+            "outputs": [
+              {"name": "diplomaId", "type": "uint256"},
+              {"name": "studentId", "type": "string"},
+              {"name": "universityName", "type": "string"},
+              {"name": "degreeName", "type": "string"},
+              {"name": "major", "type": "string"},
+              {"name": "ipfsHash", "type": "string"},
+              {"name": "studentAddress", "type": "address"},
+              {"name": "issueDate", "type": "uint256"},
+              {"name": "isVerified", "type": "bool"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ],
+        functionName: 'getDiplomaPublicData',
+        args: [BigInt(diplomaId)]
+      });
+      
+      console.log(`📊 Real contract data for diploma ${diplomaId}:`, result);
+      return result;
     } catch (error) {
-      console.error(`❌ Error getting public data for diploma ${diplomaId}:`, error);
+      console.log(`No diploma found with ID ${diplomaId}:`, error.message);
       return null;
     }
   };
@@ -132,10 +155,51 @@ export const useDiplomaManagement = () => {
             let decryptedGraduationYear = 0;
             let decryptedDegreeType = 0;
             
-            // Note: For now, we'll use default values since FHE decryption requires
-            // specific permissions and the encrypted data is only accessible to university admins
-            // In a real implementation, students would need their own decryption keys
-            console.log(`🔐 Encrypted data for diploma ${diplomaId} requires university admin access`);
+            // Try to decrypt encrypted data for the student
+            try {
+              if (instance && address) {
+                console.log(`🔓 Attempting to decrypt diploma ${diplomaId} data...`);
+                
+                // Get encrypted data from contract
+                const { createPublicClient, http } = await import('viem');
+                const { sepolia } = await import('viem/chains');
+                const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || '0x337F0c42c8E12689ED509c7549c3a539A2C6a7eA';
+                
+                const publicClient = createPublicClient({
+                  chain: sepolia,
+                  transport: http('https://1rpc.io/sepolia')
+                });
+                
+                const encryptedData = await publicClient.readContract({
+                  address: contractAddress as `0x${string}`,
+                  abi: [
+                    {
+                      "inputs": [{"name": "_diplomaId", "type": "uint256"}],
+                      "name": "getDiplomaEncryptedData",
+                      "outputs": [
+                        {"name": "encryptedGpa", "type": "bytes32"},
+                        {"name": "encryptedGraduationYear", "type": "bytes32"},
+                        {"name": "encryptedDegreeType", "type": "bytes32"}
+                      ],
+                      "stateMutability": "view",
+                      "type": "function"
+                    }
+                  ],
+                  functionName: 'getDiplomaEncryptedData',
+                  args: [BigInt(diplomaId)]
+                });
+                
+                console.log(`🔐 Encrypted data for diploma ${diplomaId}:`, encryptedData);
+                
+                // Note: FHE decryption requires specific permissions
+                // For now, we'll use placeholder values since students can't decrypt their own data
+                // In a real implementation, this would require proper FHE key management
+                console.log(`🔐 FHE decryption requires proper key management - using placeholder values`);
+              }
+            } catch (decryptError) {
+              console.warn(`⚠️ Could not decrypt diploma ${diplomaId} data:`, decryptError);
+              // Continue with default values if decryption fails
+            }
             
             decryptedDiplomas.push({
               diplomaId,
