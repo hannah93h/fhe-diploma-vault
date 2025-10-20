@@ -170,8 +170,11 @@ export const useDiplomaManagement = () => {
             decryptedGraduationYear = 2024; // Default graduation year
             decryptedDegreeType = 1; // Default degree type (Bachelor)
             
-            const issueTimestamp = Number(publicData.issueDate);
-            console.log(`📅 Processing diploma ${diplomaId} issue date:`, issueTimestamp, 'converted:', new Date(issueTimestamp * 1000));
+            // Convert BigInt to number for timestamp
+            const issueTimestamp = typeof publicData.issueDate === 'bigint' 
+              ? Number(publicData.issueDate) 
+              : Number(publicData.issueDate);
+            console.log(`📅 Processing diploma ${diplomaId} issue date:`, publicData.issueDate, 'as number:', issueTimestamp, 'converted:', new Date(issueTimestamp * 1000));
             
             decryptedDiplomas.push({
               diplomaId: Number(diplomaId),
@@ -202,7 +205,7 @@ export const useDiplomaManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError]);
+  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError, getDiplomaPublicData]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
