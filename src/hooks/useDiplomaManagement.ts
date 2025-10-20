@@ -109,15 +109,7 @@ export const useDiplomaManagement = () => {
   };
 
   const loadUserCredentials = useCallback(async () => {
-    console.log('🔍 loadUserCredentials called with:', {
-      instance: !!instance,
-      address,
-      isLoadingDiplomaIds,
-      diplomaIds,
-      diplomaIdsError
-    });
-    
-    console.log('🔍 useEffect triggered loadUserCredentials');
+    console.log('🔍 loadUserCredentials called');
 
     if (!instance || !address) {
       console.log('❌ Missing instance or address');
@@ -127,7 +119,7 @@ export const useDiplomaManagement = () => {
 
     if (isLoadingDiplomaIds) {
       console.log('⏳ Still loading diploma IDs, waiting...');
-      return; // Wait for diploma IDs to load
+      return;
     }
 
     if (diplomaIdsError) {
@@ -136,79 +128,65 @@ export const useDiplomaManagement = () => {
       return;
     }
 
+    if (!diplomaIds || diplomaIds.length === 0) {
+      console.log('📭 No diplomas found for this address');
+      setDiplomas([]);
+      setTranscripts([]);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       const decryptedDiplomas: DecryptedDiploma[] = [];
-      const decryptedTranscripts: DecryptedTranscript[] = [];
-
-      console.log('Loading credentials for address:', address);
-      console.log('Diploma IDs from contract:', diplomaIds);
+      console.log('📚 Processing diploma IDs:', diplomaIds);
       
-      if (diplomaIds && diplomaIds.length > 0) {
-        console.log('📚 Processing diploma IDs:', diplomaIds);
+      for (let i = 0; i < diplomaIds.length; i++) {
+        const diplomaId = Number(diplomaIds[i]);
+        console.log(`📖 Loading diploma ${diplomaId} data...`);
         
-        // For each diploma ID, get the public data from contract
-        for (let i = 0; i < diplomaIds.length; i++) {
-          const diplomaId = Number(diplomaIds[i]);
-          console.log(`📖 Loading diploma ${diplomaId} data...`);
+        const publicData = await getDiplomaPublicData(diplomaId);
+        console.log(`📊 Public data for diploma ${diplomaId}:`, publicData);
+        
+        if (publicData) {
+          // Convert BigInt to number for timestamp
+          const issueTimestamp = typeof publicData.issueDate === 'bigint' 
+            ? Number(publicData.issueDate) 
+            : Number(publicData.issueDate);
           
-          // Get public data from contract
-          const publicData = await getDiplomaPublicData(diplomaId);
-          console.log(`📊 Public data for diploma ${diplomaId}:`, publicData);
+          console.log(`📅 Processing diploma ${diplomaId} issue date:`, publicData.issueDate, 'as number:', issueTimestamp);
           
-          if (publicData) {
-            // Try to decrypt encrypted data for the student
-            let decryptedGpa = 0;
-            let decryptedGraduationYear = 0;
-            let decryptedDegreeType = 0;
-            
-            // Note: Current contract has onlyUniversityAdmin modifier on getDiplomaEncryptedData
-            // Students cannot decrypt their own data until contract is updated
-            console.log(`⚠️ Skipping decryption for diploma ${diplomaId} - contract requires university admin access`);
-            
-            // For now, use default values since students cannot access encrypted data
-            decryptedGpa = 3.8; // Default GPA for demo
-            decryptedGraduationYear = 2024; // Default graduation year
-            decryptedDegreeType = 1; // Default degree type (Bachelor)
-            
-            // Convert BigInt to number for timestamp
-            const issueTimestamp = typeof publicData.issueDate === 'bigint' 
-              ? Number(publicData.issueDate) 
-              : Number(publicData.issueDate);
-            console.log(`📅 Processing diploma ${diplomaId} issue date:`, publicData.issueDate, 'as number:', issueTimestamp, 'converted:', new Date(issueTimestamp * 1000));
-            
-            decryptedDiplomas.push({
-              diplomaId: Number(diplomaId),
-              studentId: publicData.studentId,
-              graduationYear: decryptedGraduationYear,
-              gpa: decryptedGpa,
-              degreeType: decryptedDegreeType,
-              isVerified: publicData.isVerified,
-              isActive: true,
-              universityName: publicData.universityName,
-              degreeName: publicData.degreeName,
-              major: publicData.major,
-              student: publicData.studentAddress,
-              university: `0x${'0'.repeat(40)}`,
-              issueDate: issueTimestamp,
-              expiryDate: issueTimestamp + (365 * 24 * 60 * 60), // 1 year from issue date
-              ipfsHash: publicData.ipfsHash,
-            });
-          }
+          decryptedDiplomas.push({
+            diplomaId: Number(diplomaId),
+            studentId: publicData.studentId,
+            graduationYear: 2024, // Default for demo
+            gpa: 3.8, // Default for demo
+            degreeType: 1, // Default for demo
+            isVerified: publicData.isVerified,
+            isActive: true,
+            universityName: publicData.universityName,
+            degreeName: publicData.degreeName,
+            major: publicData.major,
+            student: publicData.studentAddress,
+            university: `0x${'0'.repeat(40)}`,
+            issueDate: issueTimestamp,
+            expiryDate: issueTimestamp + (365 * 24 * 60 * 60),
+            ipfsHash: publicData.ipfsHash,
+          });
         }
       }
       
+      console.log('✅ Final diplomas:', decryptedDiplomas);
       setDiplomas(decryptedDiplomas);
-      setTranscripts(decryptedTranscripts);
+      setTranscripts([]);
     } catch (err) {
       console.error('Failed to load credentials:', err);
       setError('Failed to load credentials');
     } finally {
       setIsLoading(false);
     }
-  }, [instance, address, isLoadingDiplomaIds, diplomaIdsError]);
+  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
@@ -287,20 +265,12 @@ export const useDiplomaManagement = () => {
   };
 
   useEffect(() => {
-    if (instance && address && !isLoadingDiplomaIds && diplomaIds && diplomaIds.length > 0 && !hasLoaded) {
-      console.log('🔍 useEffect: All conditions met, calling loadUserCredentials');
+    if (instance && address && !isLoadingDiplomaIds && !hasLoaded) {
+      console.log('🔍 useEffect: Calling loadUserCredentials');
       setHasLoaded(true);
       loadUserCredentials();
-    } else {
-      console.log('🔍 useEffect: Conditions not met:', {
-        instance: !!instance,
-        address: !!address,
-        isLoadingDiplomaIds,
-        diplomaIds: diplomaIds?.length || 0,
-        hasLoaded
-      });
     }
-  }, [instance, address, isLoadingDiplomaIds, diplomaIds?.length, hasLoaded]);
+  }, [instance, address, isLoadingDiplomaIds, hasLoaded, loadUserCredentials]);
 
   return {
     diplomas,
