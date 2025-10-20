@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/enhanced-button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useDiplomaManagement } from '@/hooks/useDiplomaManagement';
 import { useZamaInstance } from '@/hooks/useZamaInstance';
 import { useAdminCreateDiploma } from '@/hooks/useContract';
+import { useUniversities } from '@/hooks/useUniversities';
 import { useAccount } from 'wagmi';
-import { GraduationCap, Plus, Shield } from 'lucide-react';
+import { GraduationCap, Plus, Shield, User, Building } from 'lucide-react';
 
 interface CredentialCreatorProps {
   onCredentialCreated?: () => void;
@@ -20,6 +21,7 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
   const { instance, isLoading: fheLoading } = useZamaInstance();
   const { adminCreateDiploma, isPending, isConfirming, isConfirmed, error } = useAdminCreateDiploma();
   const { address } = useAccount();
+  const { universities, isLoading: universitiesLoading } = useUniversities();
   
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,17 +36,24 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
     studentAddress: '',
   });
 
-  // Simple university options
-  const universityOptions = [
-    'Harvard University',
-    'Massachusetts Institute of Technology', 
-    'Stanford University',
-    'University of Cambridge',
-    'Oxford University',
-    'Yale University',
-    'Princeton University',
-    'Columbia University'
-  ];
+  // Auto-generate Student ID when component mounts
+  useEffect(() => {
+    if (!formData.studentId) {
+      const generateStudentId = () => {
+        const year = new Date().getFullYear();
+        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        return `STU${year}${randomNum}`;
+      };
+      setFormData(prev => ({ ...prev, studentId: generateStudentId() }));
+    }
+  }, []);
+
+  // Auto-set student address to current wallet address
+  useEffect(() => {
+    if (address && !formData.studentAddress) {
+      setFormData(prev => ({ ...prev, studentAddress: address }));
+    }
+  }, [address]);
 
   // Degree options
   const degreeOptions = [
@@ -169,14 +178,19 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="studentId">Student ID *</Label>
+              <Label htmlFor="studentId" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Student ID *
+              </Label>
               <Input
                 id="studentId"
                 value={formData.studentId}
                 onChange={(e) => handleInputChange('studentId', e.target.value)}
-                placeholder="Enter student ID"
+                placeholder="Auto-generated"
+                className="bg-gray-50"
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">Auto-generated unique identifier</p>
             </div>
 
             <div>
@@ -226,14 +240,21 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
             <Label htmlFor="universityName">University Name *</Label>
             <Select value={formData.universityName} onValueChange={(value) => handleInputChange('universityName', value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select university" />
+                <SelectValue placeholder={universitiesLoading ? "Loading universities..." : "Select university"} />
               </SelectTrigger>
               <SelectContent>
-                {universityOptions.map((university) => (
-                  <SelectItem key={university} value={university}>
-                    {university}
-                  </SelectItem>
-                ))}
+                {universitiesLoading ? (
+                  <SelectItem value="" disabled>Loading universities...</SelectItem>
+                ) : (
+                  universities.map((university) => (
+                    <SelectItem key={university.id} value={university.name}>
+                      <div className="flex items-center gap-2">
+                        <Building className="w-4 h-4" />
+                        {university.name}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -271,13 +292,18 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
           </div>
 
           <div>
-            <Label htmlFor="studentAddress">Student Address</Label>
+            <Label htmlFor="studentAddress" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Student Address
+            </Label>
             <Input
               id="studentAddress"
               value={formData.studentAddress}
               onChange={(e) => handleInputChange('studentAddress', e.target.value)}
               placeholder={address || "Enter student wallet address"}
+              className="bg-gray-50"
             />
+            <p className="text-xs text-muted-foreground mt-1">Auto-filled with current wallet address</p>
           </div>
 
           <div>
