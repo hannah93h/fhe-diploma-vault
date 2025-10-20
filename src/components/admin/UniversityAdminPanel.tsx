@@ -100,7 +100,7 @@ const UniversityAdminPanel = () => {
       console.log(`Getting diploma ${diplomaId} data from contract...`);
       
       if (!contractAddress) {
-        console.log("Contract address not available");
+        console.error("❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS in environment variables.");
         return null;
       }
       

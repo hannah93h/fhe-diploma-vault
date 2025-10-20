@@ -27,6 +27,32 @@ A blockchain-based platform for issuing and verifying educational credentials us
 
 ## 🚀 Getting Started
 
+### Environment Configuration
+
+1. Copy the environment template:
+```bash
+cp env.example .env
+```
+
+2. Configure the following environment variables in `.env`:
+
+```bash
+# Network Configuration
+SEPOLIA_RPC_URL=https://1rpc.io/sepolia
+
+# Contract Addresses (Update after deployment)
+VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS=0x337F0c42c8E12689ED509c7549c3a539A2C6a7eA
+
+# API Keys
+ETHERSCAN_API_KEY=your_etherscan_api_key
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_project_id
+
+# FHE Configuration
+VITE_FHE_NETWORK_URL=https://api.zama.ai/fhevm
+```
+
+**Important**: The contract address must be updated after each deployment to point to the latest deployed contract.
+
 ### Prerequisites
 - Node.js 18+
 - npm or yarn

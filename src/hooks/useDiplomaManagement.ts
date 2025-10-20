@@ -60,8 +60,13 @@ export const useDiplomaManagement = () => {
       const { createPublicClient, http } = await import('viem');
       const { sepolia } = await import('viem/chains');
       
-      // Get contract address from environment or use default
-      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || '0x337F0c42c8E12689ED509c7549c3a539A2C6a7eA';
+      // Get contract address from environment variables
+      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS;
+      
+      if (!contractAddress) {
+        console.error('❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS in environment variables.');
+        return null;
+      }
       
       const publicClient = createPublicClient({
         chain: sepolia,
@@ -163,7 +168,12 @@ export const useDiplomaManagement = () => {
                 // Get encrypted data from contract
                 const { createPublicClient, http } = await import('viem');
                 const { sepolia } = await import('viem/chains');
-                const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || '0x337F0c42c8E12689ED509c7549c3a539A2C6a7eA';
+                const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS;
+                
+                if (!contractAddress) {
+                  console.error('❌ Contract address not configured for encrypted data fetch.');
+                  return;
+                }
                 
                 const publicClient = createPublicClient({
                   chain: sepolia,
