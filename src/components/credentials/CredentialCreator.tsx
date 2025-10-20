@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useDiplomaManagement } from '@/hooks/useDiplomaManagement';
 import { useZamaInstance } from '@/hooks/useZamaInstance';
-import { useAdminCreateDiploma } from '@/hooks/useContract';
+import { useCreateDiploma } from '@/hooks/useContract';
 import { useUniversities } from '@/hooks/useUniversities';
 import { useAccount } from 'wagmi';
 import { GraduationCap, Plus, Shield, User, Building } from 'lucide-react';
@@ -19,7 +19,7 @@ interface CredentialCreatorProps {
 const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreated }) => {
   const { createDiploma } = useDiplomaManagement();
   const { instance, isLoading: fheLoading } = useZamaInstance();
-  const { adminCreateDiploma, isPending, isConfirming, isConfirmed, error } = useAdminCreateDiploma();
+  const { createDiploma: contractCreateDiploma, isPending, isConfirming, isConfirmed, error } = useCreateDiploma();
   const { address } = useAccount();
   const { universities, isLoading: universitiesLoading } = useUniversities();
   
@@ -119,20 +119,35 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
 
       console.log('Creating diploma with data:', diplomaData);
 
+      // Create FHE encrypted data
+      if (!instance) {
+        throw new Error('FHE instance not initialized');
+      }
+
+      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS;
+      if (!contractAddress) {
+        throw new Error('Contract address not configured');
+      }
+
+      const input = instance.createEncryptedInput(contractAddress, address!);
+      input.add32(diplomaData.gpa); // GPA
+      input.add32(diplomaData.graduationYear); // Graduation Year
+      input.add8(diplomaData.degreeType === 'Bachelor' ? 1 : diplomaData.degreeType === 'Master' ? 2 : 3); // Degree Type
+      
+      const encryptedInput = await input.encrypt();
+
       // Call the contract function
-      const result = await adminCreateDiploma({
-        args: [
-          diplomaData.studentId,
-          diplomaData.graduationYear,
-          diplomaData.gpa,
-          diplomaData.degreeType,
-          diplomaData.universityName,
-          diplomaData.degreeName,
-          diplomaData.major,
-          diplomaData.ipfsHash,
-          diplomaData.studentAddress
-        ]
-      });
+      const result = await contractCreateDiploma(
+        diplomaData.studentId,
+        diplomaData.universityName,
+        diplomaData.degreeName,
+        diplomaData.major,
+        diplomaData.ipfsHash,
+        encryptedInput.handles[0], // encryptedGpa
+        encryptedInput.handles[1], // encryptedGraduationYear
+        encryptedInput.handles[2], // encryptedDegreeType
+        encryptedInput.inputProof
+      );
 
       console.log('Diploma creation result:', result);
       
@@ -244,7 +259,9 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
               </SelectTrigger>
               <SelectContent>
                 {universitiesLoading ? (
-                  <SelectItem value="" disabled>Loading universities...</SelectItem>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Loading universities...</div>
+                ) : universities.length === 0 ? (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">No universities available</div>
                 ) : (
                   universities.map((university) => (
                     <SelectItem key={university.id} value={university.name}>

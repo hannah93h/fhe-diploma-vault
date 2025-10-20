@@ -329,6 +329,65 @@ const FHEDiplomaVaultABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_studentId",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_universityName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_degreeName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_major",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_encryptedGpa",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_encryptedGraduationYear",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_encryptedDegreeType",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_inputProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "createDiploma",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ] as const;
 
@@ -457,24 +516,22 @@ export const useGetTranscriptEncryptedData = (transcriptId: bigint) => {
   });
 };
 
-export const useAdminCreateDiploma = () => {
+export const useCreateDiploma = () => {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
 
-  const adminCreateDiploma = async (
-    student: `0x${string}`,
-    university: `0x${string}`,
+  const createDiploma = async (
+    studentId: string,
+    universityName: string,
     degreeName: string,
     major: string,
-    studentId: any,
-    graduationYear: any,
-    gpa: any,
-    degreeType: any,
-    expiryDate: bigint,
     ipfsHash: string,
+    encryptedGpa: `0x${string}`,
+    encryptedGraduationYear: `0x${string}`,
+    encryptedDegreeType: `0x${string}`,
     inputProof: `0x${string}`
   ) => {
     const { contractAddress, abi } = useFHEDiplomaVault();
@@ -486,25 +543,23 @@ export const useAdminCreateDiploma = () => {
     return writeContractAsync({
       address: contractAddress,
       abi,
-      functionName: 'adminCreateDiploma',
+      functionName: 'createDiploma',
       args: [
-        student,
-        university,
+        studentId,
+        universityName,
         degreeName,
         major,
-        studentId,
-        graduationYear,
-        gpa,
-        degreeType,
-        expiryDate,
         ipfsHash,
+        encryptedGpa,
+        encryptedGraduationYear,
+        encryptedDegreeType,
         inputProof
       ],
     });
   };
 
   return {
-    adminCreateDiploma,
+    createDiploma,
     hash,
     isPending,
     isConfirming,
