@@ -84,23 +84,76 @@ const Verification = () => {
 
       console.log('Encrypted data from contract:', encryptedData);
 
-      // Decrypt using FHE instance
+      // Create keypair for decryption (following aidwell-connect pattern)
+      const keypair = instance.generateKeypair();
+      console.log('Generated keypair:', keypair);
+
+      // Prepare handle-contract pairs
       const handleContractPairs = [
         { handle: encryptedData[0], contractAddress }, // GPA
         { handle: encryptedData[1], contractAddress }, // Graduation Year
         { handle: encryptedData[2], contractAddress }, // Degree Type
       ];
 
-      const decryptedResult = await instance.userDecrypt(handleContractPairs);
+      console.log('Handle-contract pairs:', handleContractPairs);
+
+      // Create EIP712 signature (following aidwell-connect pattern)
+      const startTimeStamp = Math.floor(Date.now() / 1000).toString();
+      const durationDays = '10';
+      const contractAddresses = [contractAddress];
+
+      const eip712 = instance.createEIP712(
+        keypair.publicKey,
+        contractAddresses,
+        startTimeStamp,
+        durationDays
+      );
+
+      console.log('EIP712 signature data:', eip712);
+
+      // Get signer and create signature
+      const { useEthersSigner } = await import('@/hooks/useEthersSigner');
+      const signer = useEthersSigner();
+      
+      if (!signer) {
+        throw new Error('Signer not available');
+      }
+
+      const signature = await signer.signTypedData(
+        eip712.domain,
+        { UserDecryptRequestVerification: eip712.types.UserDecryptRequestVerification },
+        eip712.message
+      );
+
+      console.log('Signature created:', signature);
+
+      // Decrypt the data with proper parameters
+      const decryptedResult = await instance.userDecrypt(
+        handleContractPairs,
+        keypair.privateKey,
+        keypair.publicKey,
+        signature.replace('0x', ''),
+        contractAddresses,
+        address,
+        startTimeStamp,
+        durationDays
+      );
       
       console.log('Decrypted result:', decryptedResult);
+      
+      // Extract decrypted values from result object
+      const gpa = decryptedResult[encryptedData[0]]?.toString() || '0';
+      const graduationYear = decryptedResult[encryptedData[1]]?.toString() || '0';
+      const degreeType = decryptedResult[encryptedData[2]]?.toString() || '0';
+
+      console.log('Extracted values:', { gpa, graduationYear, degreeType });
       
       // Update the certificate with decrypted data
       const updatedCertificate = {
         ...certificate,
-        gpa: Number(decryptedResult[0]),
-        graduationYear: Number(decryptedResult[1]),
-        degreeType: Number(decryptedResult[2])
+        gpa: Number(gpa),
+        graduationYear: Number(graduationYear),
+        degreeType: Number(degreeType)
       };
 
       console.log('Updated certificate with decrypted data:', updatedCertificate);
