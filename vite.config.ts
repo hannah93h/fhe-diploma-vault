@@ -3,13 +3,14 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   server: {
     host: "::",
     port: 8080,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp'
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Resource-Policy': 'cross-origin'
     }
   },
   plugins: [react()],
@@ -19,9 +20,16 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: { 
-    global: 'globalThis' 
+    global: 'globalThis',
+    'process.env': {}
   },
   optimizeDeps: { 
-    include: ['@zama-fhe/relayer-sdk/bundle'] 
+    include: ['@zama-fhe/relayer-sdk/bundle'],
+    exclude: ['@zama-fhe/relayer-sdk']
+  },
+  build: {
+    rollupOptions: {
+      external: ['@zama-fhe/relayer-sdk/bundle']
+    }
   }
-}));
+});
