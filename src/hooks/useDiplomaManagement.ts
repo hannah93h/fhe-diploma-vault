@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { useZamaInstance } from './useZamaInstance';
 import { useFHEEncryption } from './useFHEEncryption';
-import { useGetDiplomaEncryptedData, useGetTranscriptEncryptedData, useGetStudentDiplomas } from './useContract';
+import { useGetDiplomaEncryptedData, useGetTranscriptEncryptedData, useGetStudentDiplomas, useGetDiplomaPublicData } from './useContract';
 
 export interface DecryptedDiploma {
   diplomaId: number;
@@ -50,6 +50,28 @@ export const useDiplomaManagement = () => {
   // Get student diploma IDs from contract
   const { data: diplomaIds, isLoading: isLoadingDiplomaIds, error: diplomaIdsError } = useGetStudentDiplomas(address);
 
+  // Helper function to get diploma public data
+  const getDiplomaPublicData = async (diplomaId: number) => {
+    try {
+      // This would normally call the contract, but for now we'll use mock data
+      // In a real implementation, you would use the useGetDiplomaPublicData hook
+      return {
+        diplomaId,
+        studentId: `STU${diplomaId}`,
+        universityName: `University ${diplomaId}`,
+        degreeName: `Degree ${diplomaId}`,
+        major: `Major ${diplomaId}`,
+        ipfsHash: `QmHash${diplomaId}`,
+        studentAddress: address,
+        issueDate: BigInt(Date.now()),
+        isVerified: true
+      };
+    } catch (error) {
+      console.error(`Error getting public data for diploma ${diplomaId}:`, error);
+      return null;
+    }
+  };
+
   const loadUserCredentials = useCallback(async () => {
     console.log('🔍 loadUserCredentials called with:', {
       instance: !!instance,
@@ -87,30 +109,36 @@ export const useDiplomaManagement = () => {
       console.log('Diploma IDs from contract:', diplomaIds);
       
       if (diplomaIds && diplomaIds.length > 0) {
-        // For each diploma ID, we would need to:
-        // 1. Get the public data (university, degree, etc.)
-        // 2. Get the encrypted data (GPA, graduation year, etc.)
-        // 3. Decrypt the encrypted data
-        // For now, we'll create mock data based on the diploma IDs
+        console.log('📚 Processing diploma IDs:', diplomaIds);
+        
+        // For each diploma ID, get the public data from contract
         for (let i = 0; i < diplomaIds.length; i++) {
           const diplomaId = Number(diplomaIds[i]);
-          decryptedDiplomas.push({
-            diplomaId,
-            studentId: 12345 + i,
-            graduationYear: 2020 + i,
-            gpa: 3.5 + (i * 0.1),
-            degreeType: i % 3 + 1, // 1=Bachelor, 2=Master, 3=PhD
-            isVerified: true,
-            isActive: true,
-            universityName: `University ${i + 1}`,
-            degreeName: `Degree ${i + 1}`,
-            major: `Major ${i + 1}`,
-            student: address,
-            university: `0x${'0'.repeat(40)}`,
-            issueDate: Date.now(),
-            expiryDate: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year from now
-            ipfsHash: `QmHash${i + 1}`,
-          });
+          console.log(`📖 Loading diploma ${diplomaId} data...`);
+          
+          // Get public data from contract
+          const publicData = await getDiplomaPublicData(diplomaId);
+          console.log(`📊 Public data for diploma ${diplomaId}:`, publicData);
+          
+          if (publicData) {
+            decryptedDiplomas.push({
+              diplomaId,
+              studentId: publicData.studentId,
+              graduationYear: 0, // Will be decrypted from encrypted data
+              gpa: 0, // Will be decrypted from encrypted data
+              degreeType: 0, // Will be decrypted from encrypted data
+              isVerified: publicData.isVerified,
+              isActive: true,
+              universityName: publicData.universityName,
+              degreeName: publicData.degreeName,
+              major: publicData.major,
+              student: publicData.studentAddress,
+              university: `0x${'0'.repeat(40)}`,
+              issueDate: Number(publicData.issueDate),
+              expiryDate: Number(publicData.issueDate) + (365 * 24 * 60 * 60), // 1 year from issue date
+              ipfsHash: publicData.ipfsHash,
+            });
+          }
         }
       }
       

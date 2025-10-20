@@ -407,6 +407,94 @@ const FHEDiplomaVaultABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_diplomaId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getDiplomaPublicData",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "diplomaId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "studentId",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "universityName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "degreeName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "major",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "ipfsHash",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "studentAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "issueDate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "isVerified",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_diplomaId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getDiplomaEncryptedData",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "encryptedGpa",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "encryptedGraduationYear",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "encryptedDegreeType",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const;
 
@@ -561,6 +649,34 @@ export const useGetStudentDiplomas = (studentAddress: `0x${string}` | undefined)
   });
 
   return result;
+};
+
+export const useGetDiplomaPublicData = (diplomaId: bigint | undefined) => {
+  const { contractAddress } = useFHEDiplomaVault();
+  
+  return useReadContract({
+    address: contractAddress,
+    abi: FHEDiplomaVaultABI,
+    functionName: 'getDiplomaPublicData',
+    args: diplomaId ? [diplomaId] : undefined,
+    query: {
+      enabled: !!contractAddress && !!diplomaId,
+    },
+  });
+};
+
+export const useGetDiplomaEncryptedData = (diplomaId: bigint | undefined) => {
+  const { contractAddress } = useFHEDiplomaVault();
+  
+  return useReadContract({
+    address: contractAddress,
+    abi: FHEDiplomaVaultABI,
+    functionName: 'getDiplomaEncryptedData',
+    args: diplomaId ? [diplomaId] : undefined,
+    query: {
+      enabled: !!contractAddress && !!diplomaId,
+    },
+  });
 };
 
 export const useCreateDiploma = () => {

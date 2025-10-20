@@ -5,31 +5,43 @@ import { GraduationCap, Shield, Calendar, Award, Eye } from "lucide-react";
 
 interface CertificateCardProps {
   certificate: {
-    title: string;
-    institution: string;
-    degree: string;
-    graduationDate: string;
-    gpa?: string;
+    diplomaId: number;
+    studentId: string;
+    universityName: string;
+    degreeName: string;
+    major: string;
+    graduationYear?: number;
+    gpa?: number;
+    degreeType?: number;
     isVerified: boolean;
-    studentId?: string;
-    major?: string;
-    minor?: string;
-    honors?: string[];
-    coursework?: string[];
-    location?: string;
-    issueDate?: string;
-    blockchainHash?: string;
-    encryptionLevel?: string;
+    issueDate: number;
+    ipfsHash: string;
+    isEncrypted?: boolean;
   };
   onViewDetails: () => void;
+  onDecrypt?: () => void;
 }
 
 const CertificateCard = ({ 
   certificate,
-  onViewDetails
+  onViewDetails,
+  onDecrypt
 }: CertificateCardProps) => {
   const handleDownload = () => {
     console.log("Downloading certificate...");
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleDateString();
+  };
+
+  const getDegreeTypeName = (type?: number) => {
+    switch (type) {
+      case 1: return 'Bachelor';
+      case 2: return 'Master';
+      case 3: return 'PhD';
+      default: return 'Degree';
+    }
   };
 
   return (
@@ -42,8 +54,8 @@ const CertificateCard = ({
               <GraduationCap className="w-5 h-5 text-academic-navy" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-academic-navy">{certificate.title}</h3>
-              <p className="text-sm text-muted-foreground">{certificate.institution}</p>
+              <h3 className="text-lg font-bold text-academic-navy">{certificate.degreeName}</h3>
+              <p className="text-sm text-muted-foreground">{certificate.universityName}</p>
             </div>
           </div>
           {certificate.isVerified && (
@@ -59,34 +71,42 @@ const CertificateCard = ({
       <div className="space-y-3 mb-6">
         <div className="flex items-center gap-2 text-sm">
           <Award className="w-4 h-4 text-academic-gold" />
-          <span className="font-medium">{certificate.degree}</span>
+          <span className="font-medium">{getDegreeTypeName(certificate.degreeType)}</span>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="w-4 h-4" />
-          <span>Graduated: {certificate.graduationDate}</span>
-        </div>
+        {certificate.graduationYear ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span>Graduated: {certificate.graduationYear}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span>Issue Date: {formatDate(certificate.issueDate)}</span>
+          </div>
+        )}
         
-        {certificate.gpa && (
+        {certificate.gpa ? (
           <div className="text-sm">
             <span className="text-muted-foreground">GPA: </span>
-            <span className="font-semibold text-academic-navy">{certificate.gpa}</span>
+            <span className="font-semibold text-academic-navy">{certificate.gpa}/4.0</span>
           </div>
-        )}
-
-        {certificate.major && (
+        ) : (
           <div className="text-sm">
-            <span className="text-muted-foreground">Major: </span>
-            <span className="font-semibold text-academic-navy">{certificate.major}</span>
+            <span className="text-muted-foreground">GPA: </span>
+            <span className="font-semibold text-academic-navy">Encrypted</span>
           </div>
         )}
 
-        {certificate.encryptionLevel && (
-          <div className="text-xs text-muted-foreground flex items-center gap-1">
-            <Shield className="w-3 h-3" />
-            <span>Encrypted with {certificate.encryptionLevel}</span>
-          </div>
-        )}
+        <div className="text-sm">
+          <span className="text-muted-foreground">Major: </span>
+          <span className="font-semibold text-academic-navy">{certificate.major}</span>
+        </div>
+
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <Shield className="w-3 h-3" />
+          <span>Encrypted with FHE-256</span>
+        </div>
       </div>
 
       {/* Certificate Actions */}
@@ -95,6 +115,12 @@ const CertificateCard = ({
           <Eye className="w-3 h-3 mr-1" />
           View Details
         </Button>
+        {onDecrypt && (
+          <Button variant="outline" size="sm" onClick={onDecrypt}>
+            <Shield className="w-3 h-3 mr-1" />
+            Decrypt
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={handleDownload}>
           Download
         </Button>
