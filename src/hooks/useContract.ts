@@ -533,6 +533,29 @@ export const FHEDiplomaVaultABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_diplomaId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_approved",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "_verificationNotes",
+        "type": "string"
+      }
+    ],
+    "name": "verifyDiploma",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ] as const;
 
@@ -818,5 +841,42 @@ export const useIsUniversityAdmin = () => {
     isUniversityAdmin: data || false,
     isLoading,
     error
+  };
+};
+
+// Hook to verify diploma
+export const useVerifyDiploma = () => {
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const verifyDiploma = async (diplomaId: number, approved: boolean, verificationNotes: string = "") => {
+    try {
+      const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault;
+      
+      if (!contractAddress) {
+        throw new Error('Contract address not configured');
+      }
+
+      await writeContractAsync({
+        address: contractAddress as `0x${string}`,
+        abi: FHEDiplomaVaultABI,
+        functionName: 'verifyDiploma',
+        args: [BigInt(diplomaId), approved, verificationNotes],
+      } as any);
+    } catch (error) {
+      console.error('Failed to verify diploma:', error);
+      throw error;
+    }
+  };
+
+  return {
+    verifyDiploma,
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    error,
   };
 };

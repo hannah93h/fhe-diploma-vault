@@ -21,7 +21,7 @@ import {
 import { useAccount } from "wagmi";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
-import { useGetAllUniversities, useGetDiplomaPublicData, useGetDiplomaEncryptedData, useFHEDiplomaVault } from "@/hooks/useContract";
+import { useGetAllUniversities, useGetDiplomaPublicData, useGetDiplomaEncryptedData, useFHEDiplomaVault, useVerifyDiploma } from "@/hooks/useContract";
 
 interface UniversityAdminPanelProps {
   signer?: any;
@@ -44,6 +44,7 @@ const UniversityAdminPanel = ({ signer }: UniversityAdminPanelProps) => {
   // Contract hooks
   const { data: universities } = useGetAllUniversities();
   const { contractAddress } = useFHEDiplomaVault();
+  const { verifyDiploma, isPending: isVerifyingContract, isConfirmed, error: verifyError } = useVerifyDiploma();
   
   // Load recent diplomas on component mount
   useEffect(() => {
@@ -233,11 +234,12 @@ const UniversityAdminPanel = ({ signer }: UniversityAdminPanelProps) => {
     try {
       console.log(`🔍 Verifying diploma ${diplomaId}: ${approved ? 'approved' : 'rejected'}`);
       
-      // In a real implementation, this would call the contract's verifyDiploma function
-      // For now, we'll simulate the verification process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the contract's verifyDiploma function
+      await verifyDiploma(Number(diplomaId), approved, verificationNotes);
       
-      // Update the diploma status locally
+      console.log(`✅ Diploma ${diplomaId} verification transaction submitted`);
+      
+      // Update the diploma status locally after successful transaction
       setSearchResults(prev => 
         prev.map(diploma => 
           diploma.diplomaId === diplomaId 
@@ -533,19 +535,19 @@ const UniversityAdminPanel = ({ signer }: UniversityAdminPanelProps) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleVerifyDiploma(diploma.diplomaId, true)}
-                      disabled={diploma.isVerified || isVerifying}
+                      disabled={diploma.isVerified || isVerifying || isVerifyingContract}
                     >
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      Verify
+                      {isVerifyingContract ? "Verifying..." : "Verify"}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleVerifyDiploma(diploma.diplomaId, false)}
-                      disabled={isVerifying}
+                      disabled={isVerifying || isVerifyingContract}
                     >
                       <AlertCircle className="w-3 h-3 mr-1" />
-                      Reject
+                      {isVerifyingContract ? "Rejecting..." : "Reject"}
                     </Button>
                   </div>
                 </div>
