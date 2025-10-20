@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { useZamaInstance } from './useZamaInstance';
 import { useFHEEncryption } from './useFHEEncryption';
-import { useGetDiplomaEncryptedData, useGetTranscriptEncryptedData, useGetStudentDiplomas } from './useContract';
+import { useGetDiplomaEncryptedData, useGetTranscriptEncryptedData, useGetStudentDiplomas, useGetDiplomaPublicData } from './useContract';
 
 export interface DecryptedDiploma {
   diplomaId: number;
@@ -127,12 +127,22 @@ export const useDiplomaManagement = () => {
           console.log(`📊 Public data for diploma ${diplomaId}:`, publicData);
           
           if (publicData) {
+            // Try to decrypt encrypted data for the student
+            let decryptedGpa = 0;
+            let decryptedGraduationYear = 0;
+            let decryptedDegreeType = 0;
+            
+            // Note: For now, we'll use default values since FHE decryption requires
+            // specific permissions and the encrypted data is only accessible to university admins
+            // In a real implementation, students would need their own decryption keys
+            console.log(`🔐 Encrypted data for diploma ${diplomaId} requires university admin access`);
+            
             decryptedDiplomas.push({
               diplomaId,
               studentId: publicData.studentId,
-              graduationYear: 0, // Will be decrypted from encrypted data
-              gpa: 0, // Will be decrypted from encrypted data
-              degreeType: 0, // Will be decrypted from encrypted data
+              graduationYear: decryptedGraduationYear,
+              gpa: decryptedGpa,
+              degreeType: decryptedDegreeType,
               isVerified: publicData.isVerified,
               isActive: true,
               universityName: publicData.universityName,

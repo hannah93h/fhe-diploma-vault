@@ -1,5 +1,4 @@
-import pkg from 'hardhat';
-const { ethers } = pkg;
+import { ethers } from 'hardhat';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';

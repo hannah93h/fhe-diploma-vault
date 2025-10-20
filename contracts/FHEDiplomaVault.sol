@@ -156,7 +156,7 @@ contract FHEDiplomaVault is SepoliaConfig {
         diplomas[diplomaId].ipfsHash = _ipfsHash;
         diplomas[diplomaId].studentAddress = msg.sender;
         diplomas[diplomaId].issueDate = block.timestamp;
-        diplomas[diplomaId].isVerified = false;
+        diplomas[diplomaId].isVerified = false; // Diplomas start as unverified
         diplomas[diplomaId].encryptedGpa = internalGpa;
         diplomas[diplomaId].encryptedGraduationYear = internalGraduationYear;
         diplomas[diplomaId].encryptedDegreeType = internalDegreeType;
