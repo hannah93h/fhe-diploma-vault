@@ -298,3 +298,59 @@ export const useGetTranscriptEncryptedData = (transcriptId: bigint) => {
     },
   });
 };
+
+export const useAdminCreateDiploma = () => {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const adminCreateDiploma = async (
+    student: `0x${string}`,
+    university: `0x${string}`,
+    degreeName: string,
+    major: string,
+    studentId: any,
+    graduationYear: any,
+    gpa: any,
+    degreeType: any,
+    expiryDate: bigint,
+    ipfsHash: string,
+    inputProof: `0x${string}`
+  ) => {
+    const { contractAddress, abi } = useFHEDiplomaVault();
+    
+    if (!contractAddress) {
+      throw new Error('Contract not deployed on this network');
+    }
+
+    return writeContractAsync({
+      address: contractAddress,
+      abi,
+      functionName: 'adminCreateDiploma',
+      args: [
+        student,
+        university,
+        degreeName,
+        major,
+        studentId,
+        graduationYear,
+        gpa,
+        degreeType,
+        expiryDate,
+        ipfsHash,
+        inputProof
+      ],
+    });
+  };
+
+  return {
+    adminCreateDiploma,
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    error,
+  };
+};

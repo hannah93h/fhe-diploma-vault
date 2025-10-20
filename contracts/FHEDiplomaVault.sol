@@ -78,6 +78,9 @@ contract FHEDiplomaVault is SepoliaConfig {
     
     address public owner;
     address public verifier;
+    address public admin;
+    
+    mapping(address => bool) public isAdmin;
     
     event DiplomaIssued(uint256 indexed diplomaId, address indexed student, address indexed university);
     event TranscriptIssued(uint256 indexed transcriptId, address indexed student, address indexed university);
@@ -85,10 +88,38 @@ contract FHEDiplomaVault is SepoliaConfig {
     event VerificationCompleted(uint256 indexed requestId, bool isApproved);
     event UniversityRegistered(uint256 indexed universityId, address indexed admin, string name);
     event ReputationUpdated(address indexed user, uint32 reputation);
+    event AdminAdded(address indexed admin);
+    event AdminRemoved(address indexed admin);
     
     constructor(address _verifier) {
         owner = msg.sender;
         verifier = _verifier;
+        admin = msg.sender;
+        isAdmin[msg.sender] = true;
+    }
+    
+    modifier onlyAdmin() {
+        require(isAdmin[msg.sender], "Only admin can perform this action");
+        _;
+    }
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can perform this action");
+        _;
+    }
+    
+    function addAdmin(address _admin) public onlyOwner {
+        require(_admin != address(0), "Invalid admin address");
+        isAdmin[_admin] = true;
+        admin = _admin;
+        emit AdminAdded(_admin);
+    }
+    
+    function removeAdmin(address _admin) public onlyOwner {
+        require(_admin != address(0), "Invalid admin address");
+        require(_admin != owner, "Cannot remove owner");
+        isAdmin[_admin] = false;
+        emit AdminRemoved(_admin);
     }
     
     function registerUniversity(
@@ -175,6 +206,70 @@ contract FHEDiplomaVault is SepoliaConfig {
         FHE.allow(diplomas[diplomaId].isActive, _student);
         
         emit DiplomaIssued(diplomaId, _student, msg.sender);
+        return diplomaId;
+    }
+    
+    // Admin function to create diploma for any student
+    function adminCreateDiploma(
+        address _student,
+        address _university,
+        string memory _degreeName,
+        string memory _major,
+        externalEuint32 _studentId,
+        externalEuint32 _graduationYear,
+        externalEuint32 _gpa,
+        externalEuint8 _degreeType,
+        uint256 _expiryDate,
+        string memory _ipfsHash,
+        bytes calldata inputProof
+    ) public onlyAdmin returns (uint256) {
+        require(_student != address(0), "Invalid student address");
+        require(_university != address(0), "Invalid university address");
+        require(_expiryDate > block.timestamp, "Expiry date must be in the future");
+        
+        uint256 diplomaId = diplomaCounter++;
+        
+        // Convert external encrypted values to internal encrypted values
+        euint32 internalStudentId = FHE.fromExternal(_studentId, inputProof);
+        euint32 internalGraduationYear = FHE.fromExternal(_graduationYear, inputProof);
+        euint32 internalGpa = FHE.fromExternal(_gpa, inputProof);
+        euint8 internalDegreeType = FHE.fromExternal(_degreeType, inputProof);
+        
+        diplomas[diplomaId] = Diploma({
+            diplomaId: FHE.asEuint32(diplomaId),
+            studentId: internalStudentId,
+            graduationYear: internalGraduationYear,
+            gpa: internalGpa,
+            degreeType: internalDegreeType,
+            isVerified: FHE.asEbool(true),
+            isActive: FHE.asEbool(true),
+            universityName: universities[_university].name,
+            degreeName: _degreeName,
+            major: _major,
+            student: _student,
+            university: _university,
+            issueDate: block.timestamp,
+            expiryDate: _expiryDate,
+            ipfsHash: _ipfsHash
+        });
+        
+        // Set ACL permissions for decryption
+        FHE.allowThis(diplomas[diplomaId].studentId);
+        FHE.allowThis(diplomas[diplomaId].graduationYear);
+        FHE.allowThis(diplomas[diplomaId].gpa);
+        FHE.allowThis(diplomas[diplomaId].degreeType);
+        FHE.allowThis(diplomas[diplomaId].isVerified);
+        FHE.allowThis(diplomas[diplomaId].isActive);
+        
+        // Allow student to decrypt their own data
+        FHE.allow(diplomas[diplomaId].studentId, _student);
+        FHE.allow(diplomas[diplomaId].graduationYear, _student);
+        FHE.allow(diplomas[diplomaId].gpa, _student);
+        FHE.allow(diplomas[diplomaId].degreeType, _student);
+        FHE.allow(diplomas[diplomaId].isVerified, _student);
+        FHE.allow(diplomas[diplomaId].isActive, _student);
+        
+        emit DiplomaIssued(diplomaId, _student, _university);
         return diplomaId;
     }
     
