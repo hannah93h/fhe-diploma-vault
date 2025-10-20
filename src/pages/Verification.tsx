@@ -76,10 +76,10 @@ const Verification = () => {
             "stateMutability": "view",
             "type": "function"
           }
-        ],
+        ] as const,
         functionName: 'getDiplomaEncryptedData',
         args: [BigInt(certificate.diplomaId)],
-        authorizationList: []
+        authorizationList: undefined
       });
 
       console.log('Encrypted data from contract:', encryptedData);
