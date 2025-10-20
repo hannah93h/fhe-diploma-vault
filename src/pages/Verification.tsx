@@ -11,6 +11,7 @@ import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useDiplomaManagement } from "@/hooks/useDiplomaManagement";
 import { useGetDiplomaEncryptedData } from "@/hooks/useContract";
+import { useEthersSigner } from "@/hooks/useEthersSigner";
 import { useAccount } from "wagmi";
 import { GraduationCap, Users, Shield, Plus, Eye } from "lucide-react";
 import certificateIcon from "@/assets/certificate-icon.jpg";
@@ -23,6 +24,7 @@ const Verification = () => {
   const { instance, isLoading: fheLoading, error: fheError } = useZamaInstance();
   const { isEncrypting, isDecrypting } = useFHEEncryption();
   const { diplomas, transcripts, isLoading: credentialsLoading, error: credentialsError, loadUserCredentials } = useDiplomaManagement();
+  const signer = useEthersSigner();
 
   // Load user credentials when wallet connects
   useEffect(() => {
@@ -112,9 +114,6 @@ const Verification = () => {
       console.log('EIP712 signature data:', eip712);
 
       // Get signer and create signature
-      const { useEthersSigner } = await import('@/hooks/useEthersSigner');
-      const signer = useEthersSigner();
-      
       if (!signer) {
         throw new Error('Signer not available');
       }
