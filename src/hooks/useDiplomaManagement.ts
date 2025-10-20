@@ -115,6 +115,8 @@ export const useDiplomaManagement = () => {
       diplomaIds,
       diplomaIdsError
     });
+    
+    console.log('🔍 useEffect triggered loadUserCredentials');
 
     if (!instance || !address) {
       console.log('❌ Missing instance or address');
@@ -205,7 +207,7 @@ export const useDiplomaManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError, getDiplomaPublicData]);
+  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
@@ -284,10 +286,10 @@ export const useDiplomaManagement = () => {
   };
 
   useEffect(() => {
-    if (instance && address && !isLoadingDiplomaIds) {
+    if (instance && address && !isLoadingDiplomaIds && diplomaIds) {
       loadUserCredentials();
     }
-  }, [loadUserCredentials, instance, address, isLoadingDiplomaIds]);
+  }, [instance, address, isLoadingDiplomaIds, diplomaIds]);
 
   return {
     diplomas,

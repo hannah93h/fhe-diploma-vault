@@ -502,6 +502,12 @@ export const useFHEDiplomaVault = () => {
   const chainId = useChainId();
   const contractAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]?.FHEDiplomaVault;
 
+  console.log('🔍 useFHEDiplomaVault:', {
+    chainId,
+    contractAddress,
+    availableChains: Object.keys(CONTRACT_ADDRESSES)
+  });
+
   return {
     contractAddress,
     abi: FHEDiplomaVaultABI,
