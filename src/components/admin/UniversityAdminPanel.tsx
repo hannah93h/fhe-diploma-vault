@@ -99,6 +99,10 @@ const UniversityAdminPanel = () => {
     try {
       console.log(`Getting diploma ${diplomaId} data from contract...`);
       
+      // Get contract address from CONTRACT_ADDRESSES
+      const { CONTRACT_ADDRESSES } = await import('@/lib/contracts');
+      const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault; // sepolia chain ID
+      
       if (!contractAddress) {
         console.error("❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS in environment variables.");
         return null;
