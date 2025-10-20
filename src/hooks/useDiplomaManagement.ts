@@ -170,8 +170,11 @@ export const useDiplomaManagement = () => {
             decryptedGraduationYear = 2024; // Default graduation year
             decryptedDegreeType = 1; // Default degree type (Bachelor)
             
+            const issueTimestamp = Number(publicData.issueDate);
+            console.log(`📅 Processing diploma ${diplomaId} issue date:`, issueTimestamp, 'converted:', new Date(issueTimestamp * 1000));
+            
             decryptedDiplomas.push({
-              diplomaId,
+              diplomaId: Number(diplomaId),
               studentId: publicData.studentId,
               graduationYear: decryptedGraduationYear,
               gpa: decryptedGpa,
@@ -183,8 +186,8 @@ export const useDiplomaManagement = () => {
               major: publicData.major,
               student: publicData.studentAddress,
               university: `0x${'0'.repeat(40)}`,
-              issueDate: Number(publicData.issueDate),
-              expiryDate: Number(publicData.issueDate) + (365 * 24 * 60 * 60), // 1 year from issue date
+              issueDate: issueTimestamp,
+              expiryDate: issueTimestamp + (365 * 24 * 60 * 60), // 1 year from issue date
               ipfsHash: publicData.ipfsHash,
             });
           }

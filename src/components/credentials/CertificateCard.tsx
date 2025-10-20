@@ -35,7 +35,15 @@ const CertificateCard = ({
   console.log("CertificateCard received certificate:", certificate);
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString();
+    if (!timestamp || timestamp === 0) return 'N/A';
+    try {
+      // Handle both Unix timestamp (seconds) and milliseconds
+      const date = timestamp > 1e10 ? new Date(timestamp) : new Date(timestamp * 1000);
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('Date formatting error:', error, 'timestamp:', timestamp);
+      return 'Invalid Date';
+    }
   };
 
   const getDegreeTypeName = (type?: number) => {
@@ -84,7 +92,7 @@ const CertificateCard = ({
         
         <div className="text-sm">
           <span className="text-muted-foreground">GPA: </span>
-          <span className="font-semibold text-academic-navy">N/A/4.0</span>
+          <span className="font-semibold text-academic-navy">{certificate.gpa ? `${certificate.gpa}/4.0` : 'N/A/4.0'}</span>
         </div>
 
         <div className="text-sm">
