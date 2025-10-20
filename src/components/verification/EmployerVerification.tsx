@@ -4,24 +4,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/enhanced-button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Shield, Building, CheckCircle, AlertCircle, Copy } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, Shield, Building, CheckCircle, AlertCircle, Copy, Eye, Lock } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 
 const EmployerVerification = () => {
-  const [studentAddress, setStudentAddress] = useState("");
+  const [verificationInput, setVerificationInput] = useState("");
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string>("");
+  const [verificationMethod, setVerificationMethod] = useState<"address" | "link" | "qr">("address");
   
   const { address } = useAccount();
   const { instance } = useZamaInstance();
   const { isDecrypting } = useFHEEncryption();
 
   const handleVerification = async () => {
-    if (!studentAddress.trim()) {
-      setVerificationError("Please enter a student wallet address");
+    if (!verificationInput.trim()) {
+      setVerificationError("Please enter a verification input");
       return;
     }
 
@@ -38,28 +40,35 @@ const EmployerVerification = () => {
       // In a real implementation, this would:
       // 1. Query the contract for encrypted diploma data
       // 2. Use FHE to verify credentials without decrypting
-      // 3. Return verification result
+      // 3. Return verification result without exposing sensitive data
       
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Mock verification result
+      // Mock verification result (only public data, no sensitive information)
       const mockResult = {
-        studentAddress,
+        studentAddress: verificationInput,
         verified: true,
         verificationTimestamp: Date.now(),
         encryptionLevel: "FHE-256",
         queryType: "FHE_VERIFICATION",
         privacyPreserved: true,
-        // Mock diploma data (in real implementation, this would come from FHE query)
-        diplomaData: {
+        // Only public diploma data (no GPA, grades, etc.)
+        publicDiplomaData: {
           institution: "Harvard University",
           degree: "Master of Computer Science", 
           graduationDate: "May 2023",
-          gpa: "3.8/4.0",
-          isVerified: true
+          isVerified: true,
+          issueDate: "2023-05-15"
         },
+        // Verification proof without sensitive data
         fheProof: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-        verificationHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        verificationHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        // What employer CAN see
+        verificationStatus: "VERIFIED",
+        credentialType: "DEGREE",
+        institutionVerified: true,
+        degreeVerified: true,
+        graduationVerified: true
       };
 
       setVerificationResult(mockResult);
@@ -74,16 +83,37 @@ const EmployerVerification = () => {
     if (verificationResult) {
       const resultText = `FHE Verification Result:
 Student Address: ${verificationResult.studentAddress}
+Verification Status: ${verificationResult.verificationStatus}
+Institution: ${verificationResult.publicDiplomaData.institution}
+Degree: ${verificationResult.publicDiplomaData.degree}
+Graduation: ${verificationResult.publicDiplomaData.graduationDate}
 Verified: ${verificationResult.verified ? 'Yes' : 'No'}
-Institution: ${verificationResult.diplomaData.institution}
-Degree: ${verificationResult.diplomaData.degree}
-Graduation: ${verificationResult.diplomaData.graduationDate}
-GPA: ${verificationResult.diplomaData.gpa}
-Verification Hash: ${verificationResult.verificationHash}
-Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
+Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}
+Verification Hash: ${verificationResult.verificationHash}`;
       
       navigator.clipboard.writeText(resultText);
       alert("Verification result copied to clipboard");
+    }
+  };
+
+  const handleExportResult = () => {
+    if (verificationResult) {
+      const exportData = {
+        verificationId: `VERIFY_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        employer: address,
+        result: verificationResult,
+        fheProof: verificationResult.fheProof,
+        note: "This verification result was generated using FHE and preserves student privacy"
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `verification_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -97,30 +127,75 @@ Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
               <Building className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-academic-navy">FHE Verification Portal</h3>
+              <h3 className="text-xl font-semibold text-academic-navy">Employer Verification Portal</h3>
               <p className="text-sm text-muted-foreground">
-                Verify educational credentials through encrypted queries
+                Verify educational credentials through FHE queries (privacy-preserving)
               </p>
             </div>
           </div>
 
+          {/* Verification Method Selection */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Verification Method</Label>
+            <div className="flex gap-2">
+              <Button
+                variant={verificationMethod === "address" ? "academic" : "outline"}
+                size="sm"
+                onClick={() => setVerificationMethod("address")}
+              >
+                Wallet Address
+              </Button>
+              <Button
+                variant={verificationMethod === "link" ? "academic" : "outline"}
+                size="sm"
+                onClick={() => setVerificationMethod("link")}
+              >
+                Verification Link
+              </Button>
+              <Button
+                variant={verificationMethod === "qr" ? "academic" : "outline"}
+                size="sm"
+                onClick={() => setVerificationMethod("qr")}
+              >
+                QR Code
+              </Button>
+            </div>
+          </div>
+
+          {/* Input Field */}
           <div className="space-y-3">
             <div>
-              <Label htmlFor="student-address" className="text-sm font-medium">
-                Student Wallet Address
+              <Label htmlFor="verification-input" className="text-sm font-medium">
+                {verificationMethod === "address" && "Student Wallet Address"}
+                {verificationMethod === "link" && "Verification Link"}
+                {verificationMethod === "qr" && "QR Code Data"}
               </Label>
               <div className="flex gap-2 mt-1">
-                <Input
-                  id="student-address"
-                  placeholder="0x..."
-                  value={studentAddress}
-                  onChange={(e) => setStudentAddress(e.target.value)}
-                  className="font-mono text-sm"
-                />
+                {verificationMethod === "link" || verificationMethod === "qr" ? (
+                  <Textarea
+                    id="verification-input"
+                    placeholder={
+                      verificationMethod === "link" 
+                        ? "https://fhe-diploma-vault.vercel.app/verify/0x..." 
+                        : '{"type":"FHE_DIPLOMA_VERIFICATION","diplomaId":"0x...","studentAddress":"0x..."}'
+                    }
+                    value={verificationInput}
+                    onChange={(e) => setVerificationInput(e.target.value)}
+                    className="font-mono text-sm min-h-[80px]"
+                  />
+                ) : (
+                  <Input
+                    id="verification-input"
+                    placeholder="0x..."
+                    value={verificationInput}
+                    onChange={(e) => setVerificationInput(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                )}
                 <Button 
                   variant="academic" 
                   onClick={handleVerification}
-                  disabled={!studentAddress || isVerifying}
+                  disabled={!verificationInput || isVerifying}
                 >
                   <Search className="w-4 h-4 mr-2" />
                   {isVerifying ? "Verifying..." : "Verify"}
@@ -154,7 +229,7 @@ Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
               <div className="flex items-center gap-2">
                 <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                   <CheckCircle className="w-3 h-3 mr-1" />
-                  Verified
+                  {verificationResult.verificationStatus}
                 </Badge>
                 <Button
                   variant="outline"
@@ -162,11 +237,19 @@ Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
                   onClick={handleCopyResult}
                 >
                   <Copy className="w-3 h-3 mr-1" />
-                  Copy Result
+                  Copy
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportResult}
+                >
+                  Export
                 </Button>
               </div>
             </div>
 
+            {/* Public Information Only */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div>
@@ -175,32 +258,33 @@ Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
                 </div>
                 <div>
                   <span className="text-xs font-medium text-muted-foreground">Institution</span>
-                  <p className="text-sm font-semibold">{verificationResult.diplomaData.institution}</p>
+                  <p className="text-sm font-semibold">{verificationResult.publicDiplomaData.institution}</p>
                 </div>
                 <div>
                   <span className="text-xs font-medium text-muted-foreground">Degree</span>
-                  <p className="text-sm font-semibold">{verificationResult.diplomaData.degree}</p>
+                  <p className="text-sm font-semibold">{verificationResult.publicDiplomaData.degree}</p>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div>
                   <span className="text-xs font-medium text-muted-foreground">Graduation Date</span>
-                  <p className="text-sm font-semibold">{verificationResult.diplomaData.graduationDate}</p>
+                  <p className="text-sm font-semibold">{verificationResult.publicDiplomaData.graduationDate}</p>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-muted-foreground">GPA</span>
-                  <p className="text-sm font-semibold">{verificationResult.diplomaData.gpa}</p>
+                  <span className="text-xs font-medium text-muted-foreground">Issue Date</span>
+                  <p className="text-sm font-semibold">{verificationResult.publicDiplomaData.issueDate}</p>
                 </div>
                 <div>
                   <span className="text-xs font-medium text-muted-foreground">Verification Status</span>
                   <p className="text-sm font-semibold text-green-600">
-                    {verificationResult.diplomaData.isVerified ? 'Verified' : 'Not Verified'}
+                    {verificationResult.publicDiplomaData.isVerified ? 'Verified' : 'Not Verified'}
                   </p>
                 </div>
               </div>
             </div>
 
+            {/* Privacy Notice */}
             <div className="pt-4 border-t border-certificate-border">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
@@ -208,12 +292,12 @@ Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
                   <span>Encryption: {verificationResult.encryptionLevel}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 text-academic-gold" />
-                  <span>Query processed via FHE</span>
+                  <Lock className="w-3 h-3 text-academic-gold" />
+                  <span>Privacy preserved</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3 text-academic-gold" />
-                  <span>Privacy preserved</span>
+                  <Eye className="w-3 h-3 text-academic-gold" />
+                  <span>No sensitive data exposed</span>
                 </div>
               </div>
               
@@ -221,6 +305,16 @@ Privacy Preserved: ${verificationResult.privacyPreserved ? 'Yes' : 'No'}`;
                 <div className="text-xs text-muted-foreground mb-1">FHE Verification Hash</div>
                 <div className="text-xs font-mono text-academic-navy break-all">
                   {verificationResult.verificationHash}
+                </div>
+              </div>
+
+              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 text-xs text-yellow-700">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>
+                    <strong>Privacy Notice:</strong> This verification result contains only public information. 
+                    Sensitive data like GPA, grades, and personal details remain encrypted and are not accessible to employers.
+                  </span>
                 </div>
               </div>
             </div>

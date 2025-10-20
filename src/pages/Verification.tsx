@@ -5,13 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CertificateCard from "@/components/credentials/CertificateCard";
 import CertificateDetailModal from "@/components/credentials/CertificateDetailModal";
 import CredentialCreator from "@/components/credentials/CredentialCreator";
+import UniversityAdminPanel from "@/components/admin/UniversityAdminPanel";
 import EmployerVerification from "@/components/verification/EmployerVerification";
 import Header from "@/components/layout/Header";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useDiplomaManagement } from "@/hooks/useDiplomaManagement";
 import { useAccount } from "wagmi";
-import { GraduationCap, Users, Plus, Shield, Eye, Share2, QrCode } from "lucide-react";
+import { GraduationCap, Users, Shield, Plus, Eye, Share2, QrCode } from "lucide-react";
 import certificateIcon from "@/assets/certificate-icon.jpg";
 
 const Verification = () => {
@@ -53,7 +54,6 @@ const Verification = () => {
       "Distributed Systems",
       "Computer Vision"
     ],
-    // Simple verification data
     verificationId: `VERIFY_${diploma.diplomaId}`,
     shareableCode: `FHE_${diploma.diplomaId}`,
     publicVerificationUrl: `${window.location.origin}/verify/${diploma.diplomaId}`
@@ -96,13 +96,20 @@ const Verification = () => {
       <section className="pt-24 pb-16 bg-gradient-to-br from-background to-certificate-bg">
         <div className="container mx-auto px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-6xl mx-auto">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsList className="grid w-full grid-cols-3 mb-8">
               <TabsTrigger 
                 value="student" 
                 className="data-[state=active]:bg-academic-navy data-[state=active]:text-primary-foreground"
               >
                 <GraduationCap className="w-4 h-4 mr-2" />
-                Student Portal
+                My Portal
+              </TabsTrigger>
+              <TabsTrigger 
+                value="university"
+                className="data-[state=active]:bg-academic-navy data-[state=active]:text-primary-foreground"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                University Admin
               </TabsTrigger>
               <TabsTrigger 
                 value="employer"
@@ -113,6 +120,7 @@ const Verification = () => {
               </TabsTrigger>
             </TabsList>
 
+            {/* Student Portal - Create and manage encrypted credentials */}
             <TabsContent value="student" className="space-y-8">
               <div className="max-w-4xl mx-auto">
                 <div className="space-y-6">
@@ -124,7 +132,7 @@ const Verification = () => {
                         className="w-12 h-12 rounded-lg object-cover border border-certificate-border"
                       />
                       <div>
-                        <h2 className="text-2xl font-bold text-academic-navy">Your Credentials</h2>
+                        <h2 className="text-2xl font-bold text-academic-navy">My Credentials</h2>
                         <p className="text-muted-foreground">Create and manage your encrypted educational records</p>
                       </div>
                     </div>
@@ -206,6 +214,26 @@ const Verification = () => {
               </div>
             </TabsContent>
 
+            {/* University Admin - Decrypt and verify student credentials */}
+            <TabsContent value="university" className="space-y-8">
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-academic-navy to-primary rounded-lg">
+                      <Shield className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-academic-navy">University Admin Panel</h2>
+                      <p className="text-muted-foreground">Decrypt and verify student credentials with full access</p>
+                    </div>
+                  </div>
+
+                  <UniversityAdminPanel />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Employer Verification - View verification results without sensitive data */}
             <TabsContent value="employer" className="space-y-8">
               <div className="max-w-4xl mx-auto">
                 <div className="space-y-6">
@@ -219,14 +247,14 @@ const Verification = () => {
                     </div>
                   </div>
 
-                  {/* Simple Verification Process */}
+                  {/* Verification Process Flow */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <Card className="p-4 text-center border-2 border-academic-gold">
                       <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-academic-navy to-primary rounded-full flex items-center justify-center">
                         <Share2 className="w-6 h-6 text-primary-foreground" />
                       </div>
                       <h3 className="font-semibold text-academic-navy mb-2">1. Student Shares</h3>
-                      <p className="text-sm text-muted-foreground">Student provides wallet address or verification link</p>
+                      <p className="text-sm text-muted-foreground">Student provides verification link or QR code</p>
                     </Card>
                     
                     <Card className="p-4 text-center border-2 border-academic-gold">

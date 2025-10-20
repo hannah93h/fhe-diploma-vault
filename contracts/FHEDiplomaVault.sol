@@ -1,544 +1,320 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.20;
 
-import { SepoliaConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
-import { euint32, externalEuint32, euint8, ebool, FHE } from "@fhevm/solidity/lib/FHE.sol";
+import "@fhevm/solidity/FHE.sol";
 
-contract FHEDiplomaVault is SepoliaConfig {
-    using FHE for *;
-    
+contract FHEDiplomaVault {
+    // Diploma struct with FHE encrypted data
     struct Diploma {
-        euint32 diplomaId;
-        euint32 studentId;
-        euint32 graduationYear;
-        euint32 gpa;
-        euint8 degreeType; // 1=Bachelor, 2=Master, 3=PhD
-        ebool isVerified;
-        ebool isActive;
-        string universityName;
-        string degreeName;
-        string major;
-        address student;
-        address university;
-        uint256 issueDate;
-        uint256 expiryDate;
-        string ipfsHash;
+        uint256 diplomaId;           // Public ID
+        string studentId;            // Public student ID
+        string universityName;       // Public university name
+        string degreeName;           // Public degree name
+        string major;                // Public major
+        string ipfsHash;             // Public IPFS hash
+        address studentAddress;      // Public student address
+        uint256 issueDate;           // Public issue date
+        bool isVerified;             // Public verification status
+        
+        // FHE encrypted sensitive data
+        euint32 encryptedGpa;        // Encrypted GPA
+        euint32 encryptedGraduationYear; // Encrypted graduation year
+        euint8 encryptedDegreeType;   // Encrypted degree type (1=Bachelor, 2=Master, 3=PhD)
+        ebool encryptedIsApproved;   // Encrypted approval status
     }
-    
-    struct Transcript {
-        euint32 transcriptId;
-        euint32 studentId;
-        euint32 totalCredits;
-        euint32 completedCredits;
-        euint32 gpa;
-        ebool isVerified;
-        ebool isActive;
-        string universityName;
-        address student;
-        address university;
-        uint256 issueDate;
-        string ipfsHash;
-    }
-    
-    struct VerificationRequest {
-        euint32 requestId;
-        euint32 credentialId;
-        ebool isDiploma; // true for diploma, false for transcript
-        ebool isApproved;
-        ebool isCompleted;
-        address requester;
-        address university;
-        uint256 requestDate;
-        uint256 responseDate;
-        string purpose;
-    }
-    
+
+    // University struct
     struct University {
-        euint32 universityId;
-        ebool isVerified;
-        ebool isActive;
+        uint256 universityId;
         string name;
         string country;
-        string accreditation;
         address admin;
+        bool isVerified;
+        bool isActive;
         uint256 registrationDate;
     }
-    
-    mapping(uint256 => Diploma) public diplomas;
-    mapping(uint256 => Transcript) public transcripts;
-    mapping(uint256 => VerificationRequest) public verificationRequests;
-    mapping(address => University) public universities;
-    mapping(address => euint32) public studentReputation;
-    mapping(address => euint32) public universityReputation;
-    
-    uint256 public diplomaCounter;
-    uint256 public transcriptCounter;
-    uint256 public verificationCounter;
-    uint256 public universityCounter;
-    
-    address public owner;
-    address public verifier;
-    address public admin;
+
+    // Verification request struct
+    struct VerificationRequest {
+        address requester;           // Who requested verification
+        uint256 diplomaId;           // Which diploma to verify
+        string purpose;              // Purpose of verification
+        bool isCompleted;            // Whether verification is completed
+        uint256 requestDate;        // When request was made
+        string verificationResult;   // Result of verification
+    }
+
+    // State variables
+    mapping(uint256 => Diploma) private diplomas;
+    mapping(uint256 => University) private universities;
+    mapping(uint256 => VerificationRequest) private verificationRequests;
     
     mapping(address => bool) public isAdmin;
+    mapping(address => bool) public isUniversityAdmin;
+    mapping(address => uint256[]) public studentDiplomas;
+    mapping(address => uint256[]) public universityVerifications;
     
-    event DiplomaIssued(uint256 indexed diplomaId, address indexed student, address indexed university);
-    event TranscriptIssued(uint256 indexed transcriptId, address indexed student, address indexed university);
-    event VerificationRequested(uint256 indexed requestId, address indexed requester, uint256 indexed credentialId);
-    event VerificationCompleted(uint256 indexed requestId, bool isApproved);
+    uint256 public diplomaCounter;
+    uint256 public universityCounter;
+    uint256 public verificationCounter;
+    address public owner;
+
+    // Events
+    event DiplomaCreated(uint256 indexed diplomaId, address indexed student, string universityName);
     event UniversityRegistered(uint256 indexed universityId, address indexed admin, string name);
-    event ReputationUpdated(address indexed user, uint32 reputation);
-    event AdminAdded(address indexed admin);
-    event AdminRemoved(address indexed admin);
-    
-    constructor(address _verifier) {
+    event VerificationRequested(uint256 indexed requestId, address indexed requester, uint256 diplomaId);
+    event VerificationCompleted(uint256 indexed requestId, bool approved, string result);
+    event DiplomaVerified(uint256 indexed diplomaId, bool verified);
+
+    constructor() {
         owner = msg.sender;
-        verifier = _verifier;
-        admin = msg.sender;
         isAdmin[msg.sender] = true;
     }
-    
-    modifier onlyAdmin() {
-        require(isAdmin[msg.sender], "Only admin can perform this action");
-        _;
-    }
-    
+
+    // Modifiers
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can perform this action");
+        require(msg.sender == owner, "Only owner");
         _;
     }
-    
+
+    modifier onlyAdmin() {
+        require(isAdmin[msg.sender], "Only admin");
+        _;
+    }
+
+    modifier onlyUniversityAdmin() {
+        require(isUniversityAdmin[msg.sender], "Only university admin");
+        _;
+    }
+
+    // Admin functions
     function addAdmin(address _admin) public onlyOwner {
-        require(_admin != address(0), "Invalid admin address");
         isAdmin[_admin] = true;
-        admin = _admin;
-        emit AdminAdded(_admin);
     }
-    
-    function removeAdmin(address _admin) public onlyOwner {
-        require(_admin != address(0), "Invalid admin address");
-        require(_admin != owner, "Cannot remove owner");
-        isAdmin[_admin] = false;
-        emit AdminRemoved(_admin);
+
+    function addUniversityAdmin(address _admin) public onlyAdmin {
+        isUniversityAdmin[_admin] = true;
     }
-    
+
     function registerUniversity(
         string memory _name,
         string memory _country,
-        string memory _accreditation
-    ) public returns (uint256) {
+        address _admin
+    ) public onlyAdmin returns (uint256) {
         require(bytes(_name).length > 0, "University name cannot be empty");
-        require(universities[msg.sender].admin == address(0), "University already registered");
+        require(_admin != address(0), "Invalid admin address");
+        require(!isUniversityAdmin[_admin], "Address already registered as university admin");
         
         uint256 universityId = universityCounter++;
         
-        universities[msg.sender] = University({
-            universityId: FHE.asEuint32(0), // Will be set properly later
-            isVerified: FHE.asEbool(false),
-            isActive: FHE.asEbool(true),
+        universities[universityId] = University({
+            universityId: universityId,
             name: _name,
             country: _country,
-            accreditation: _accreditation,
-            admin: msg.sender,
+            admin: _admin,
+            isVerified: true,
+            isActive: true,
             registrationDate: block.timestamp
         });
         
-        emit UniversityRegistered(universityId, msg.sender, _name);
+        isUniversityAdmin[_admin] = true;
+        emit UniversityRegistered(universityId, _admin, _name);
         return universityId;
     }
-    
-    function issueDiploma(
-        address _student,
+
+    // Student creates diploma (encrypted)
+    function createDiploma(
+        string memory _studentId,
+        string memory _universityName,
         string memory _degreeName,
         string memory _major,
-        externalEuint32 _studentId,
-        externalEuint32 _graduationYear,
-        externalEuint32 _gpa,
-        externalEuint8 _degreeType,
-        uint256 _expiryDate,
         string memory _ipfsHash,
-        bytes calldata inputProof
+        externalEuint32 _encryptedGpa,
+        externalEuint32 _encryptedGraduationYear,
+        externalEuint8 _encryptedDegreeType,
+        externalEbool _encryptedIsApproved
     ) public returns (uint256) {
-        require(universities[msg.sender].admin != address(0), "Only registered universities can issue diplomas");
-        require(_student != address(0), "Invalid student address");
-        require(_expiryDate > block.timestamp, "Expiry date must be in the future");
+        require(bytes(_studentId).length > 0, "Student ID cannot be empty");
+        require(bytes(_universityName).length > 0, "University name cannot be empty");
+        require(bytes(_degreeName).length > 0, "Degree name cannot be empty");
         
         uint256 diplomaId = diplomaCounter++;
         
-        // Convert external encrypted values to internal encrypted values
-        euint32 internalStudentId = FHE.fromExternal(_studentId, inputProof);
-        euint32 internalGraduationYear = FHE.fromExternal(_graduationYear, inputProof);
-        euint32 internalGpa = FHE.fromExternal(_gpa, inputProof);
-        euint8 internalDegreeType = FHE.fromExternal(_degreeType, inputProof);
-        
         diplomas[diplomaId] = Diploma({
-            diplomaId: FHE.asEuint32(diplomaId),
-            studentId: internalStudentId,
-            graduationYear: internalGraduationYear,
-            gpa: internalGpa,
-            degreeType: internalDegreeType,
-            isVerified: FHE.asEbool(true),
-            isActive: FHE.asEbool(true),
-            universityName: universities[msg.sender].name,
+            diplomaId: diplomaId,
+            studentId: _studentId,
+            universityName: _universityName,
             degreeName: _degreeName,
             major: _major,
-            student: _student,
-            university: msg.sender,
+            ipfsHash: _ipfsHash,
+            studentAddress: msg.sender,
             issueDate: block.timestamp,
-            expiryDate: _expiryDate,
-            ipfsHash: _ipfsHash
+            isVerified: false,
+            encryptedGpa: FHE.fromExternal(_encryptedGpa),
+            encryptedGraduationYear: FHE.fromExternal(_encryptedGraduationYear),
+            encryptedDegreeType: FHE.fromExternal(_encryptedDegreeType),
+            encryptedIsApproved: FHE.fromExternal(_encryptedIsApproved)
         });
         
-        // Set ACL permissions for decryption
-        FHE.allowThis(diplomas[diplomaId].studentId);
-        FHE.allowThis(diplomas[diplomaId].graduationYear);
-        FHE.allowThis(diplomas[diplomaId].gpa);
-        FHE.allowThis(diplomas[diplomaId].degreeType);
-        FHE.allowThis(diplomas[diplomaId].isVerified);
-        FHE.allowThis(diplomas[diplomaId].isActive);
-        
-        // Allow student to decrypt their own data
-        FHE.allow(diplomas[diplomaId].studentId, _student);
-        FHE.allow(diplomas[diplomaId].graduationYear, _student);
-        FHE.allow(diplomas[diplomaId].gpa, _student);
-        FHE.allow(diplomas[diplomaId].degreeType, _student);
-        FHE.allow(diplomas[diplomaId].isVerified, _student);
-        FHE.allow(diplomas[diplomaId].isActive, _student);
-        
-        emit DiplomaIssued(diplomaId, _student, msg.sender);
+        studentDiplomas[msg.sender].push(diplomaId);
+        emit DiplomaCreated(diplomaId, msg.sender, _universityName);
         return diplomaId;
     }
-    
-    // Admin function to create diploma for any student
-    function adminCreateDiploma(
-        address _student,
-        address _university,
-        string memory _degreeName,
-        string memory _major,
-        externalEuint32 _studentId,
-        externalEuint32 _graduationYear,
-        externalEuint32 _gpa,
-        externalEuint8 _degreeType,
-        uint256 _expiryDate,
-        string memory _ipfsHash,
-        bytes calldata inputProof
-    ) public onlyAdmin returns (uint256) {
-        require(_student != address(0), "Invalid student address");
-        require(_university != address(0), "Invalid university address");
-        require(_expiryDate > block.timestamp, "Expiry date must be in the future");
+
+    // University admin verifies diploma (can decrypt)
+    function verifyDiploma(
+        uint256 _diplomaId,
+        bool _approved,
+        string memory _verificationNotes
+    ) public onlyUniversityAdmin {
+        require(_diplomaId < diplomaCounter, "Diploma does not exist");
         
-        uint256 diplomaId = diplomaCounter++;
+        diplomas[_diplomaId].isVerified = _approved;
+        universityVerifications[msg.sender].push(_diplomaId);
         
-        // Convert external encrypted values to internal encrypted values
-        euint32 internalStudentId = FHE.fromExternal(_studentId, inputProof);
-        euint32 internalGraduationYear = FHE.fromExternal(_graduationYear, inputProof);
-        euint32 internalGpa = FHE.fromExternal(_gpa, inputProof);
-        euint8 internalDegreeType = FHE.fromExternal(_degreeType, inputProof);
-        
-        diplomas[diplomaId] = Diploma({
-            diplomaId: FHE.asEuint32(diplomaId),
-            studentId: internalStudentId,
-            graduationYear: internalGraduationYear,
-            gpa: internalGpa,
-            degreeType: internalDegreeType,
-            isVerified: FHE.asEbool(true),
-            isActive: FHE.asEbool(true),
-            universityName: universities[_university].name,
-            degreeName: _degreeName,
-            major: _major,
-            student: _student,
-            university: _university,
-            issueDate: block.timestamp,
-            expiryDate: _expiryDate,
-            ipfsHash: _ipfsHash
-        });
-        
-        // Set ACL permissions for decryption
-        FHE.allowThis(diplomas[diplomaId].studentId);
-        FHE.allowThis(diplomas[diplomaId].graduationYear);
-        FHE.allowThis(diplomas[diplomaId].gpa);
-        FHE.allowThis(diplomas[diplomaId].degreeType);
-        FHE.allowThis(diplomas[diplomaId].isVerified);
-        FHE.allowThis(diplomas[diplomaId].isActive);
-        
-        // Allow student to decrypt their own data
-        FHE.allow(diplomas[diplomaId].studentId, _student);
-        FHE.allow(diplomas[diplomaId].graduationYear, _student);
-        FHE.allow(diplomas[diplomaId].gpa, _student);
-        FHE.allow(diplomas[diplomaId].degreeType, _student);
-        FHE.allow(diplomas[diplomaId].isVerified, _student);
-        FHE.allow(diplomas[diplomaId].isActive, _student);
-        
-        emit DiplomaIssued(diplomaId, _student, _university);
-        return diplomaId;
+        emit DiplomaVerified(_diplomaId, _approved);
     }
-    
-    function issueTranscript(
-        address _student,
-        externalEuint32 _studentId,
-        externalEuint32 _totalCredits,
-        externalEuint32 _completedCredits,
-        externalEuint32 _gpa,
-        string memory _ipfsHash,
-        bytes calldata inputProof
-    ) public returns (uint256) {
-        require(universities[msg.sender].admin != address(0), "Only registered universities can issue transcripts");
-        require(_student != address(0), "Invalid student address");
-        
-        uint256 transcriptId = transcriptCounter++;
-        
-        // Convert external encrypted values to internal encrypted values
-        euint32 internalStudentId = FHE.fromExternal(_studentId, inputProof);
-        euint32 internalTotalCredits = FHE.fromExternal(_totalCredits, inputProof);
-        euint32 internalCompletedCredits = FHE.fromExternal(_completedCredits, inputProof);
-        euint32 internalGpa = FHE.fromExternal(_gpa, inputProof);
-        
-        transcripts[transcriptId] = Transcript({
-            transcriptId: FHE.asEuint32(0), // Will be set properly later
-            studentId: internalStudentId,
-            totalCredits: internalTotalCredits,
-            completedCredits: internalCompletedCredits,
-            gpa: internalGpa,
-            isVerified: FHE.asEbool(true),
-            isActive: FHE.asEbool(true),
-            universityName: universities[msg.sender].name,
-            student: _student,
-            university: msg.sender,
-            issueDate: block.timestamp,
-            ipfsHash: _ipfsHash
-        });
-        
-        emit TranscriptIssued(transcriptId, _student, msg.sender);
-        return transcriptId;
-    }
-    
+
+    // Employer requests verification (cannot see sensitive data)
     function requestVerification(
-        uint256 _credentialId,
-        bool _isDiploma,
+        uint256 _diplomaId,
         string memory _purpose
     ) public returns (uint256) {
-        require(_credentialId < diplomaCounter || _credentialId < transcriptCounter, "Credential does not exist");
-        require(bytes(_purpose).length > 0, "Purpose cannot be empty");
+        require(_diplomaId < diplomaCounter, "Diploma does not exist");
         
         uint256 requestId = verificationCounter++;
         
         verificationRequests[requestId] = VerificationRequest({
-            requestId: FHE.asEuint32(0), // Will be set properly later
-            credentialId: FHE.asEuint32(_credentialId),
-            isDiploma: FHE.asEbool(_isDiploma),
-            isApproved: FHE.asEbool(false),
-            isCompleted: FHE.asEbool(false),
             requester: msg.sender,
-            university: _isDiploma ? diplomas[_credentialId].university : transcripts[_credentialId].university,
+            diplomaId: _diplomaId,
+            purpose: _purpose,
+            isCompleted: false,
             requestDate: block.timestamp,
-            responseDate: 0,
-            purpose: _purpose
+            verificationResult: ""
         });
         
-        emit VerificationRequested(requestId, msg.sender, _credentialId);
+        emit VerificationRequested(requestId, msg.sender, _diplomaId);
         return requestId;
     }
-    
+
+    // University admin responds to verification request
     function respondToVerification(
         uint256 _requestId,
-        externalEbool _isApproved,
-        bytes calldata inputProof
-    ) public {
-        require(verificationRequests[_requestId].requester != address(0), "Request does not exist");
-        require(verificationRequests[_requestId].university == msg.sender, "Only the issuing university can respond");
-        require(!FHE.decrypt(verificationRequests[_requestId].isCompleted), "Request already completed");
+        bool _approved,
+        string memory _result
+    ) public onlyUniversityAdmin {
+        require(_requestId < verificationCounter, "Request does not exist");
+        require(!verificationRequests[_requestId].isCompleted, "Request already completed");
         
-        euint32 internalIsApproved = FHE.fromExternal(_isApproved, inputProof);
+        verificationRequests[_requestId].isCompleted = true;
+        verificationRequests[_requestId].verificationResult = _result;
         
-        verificationRequests[_requestId].isApproved = internalIsApproved;
-        verificationRequests[_requestId].isCompleted = FHE.asEbool(true);
-        verificationRequests[_requestId].responseDate = block.timestamp;
-        
-        emit VerificationCompleted(_requestId, FHE.decrypt(internalIsApproved));
-    }
-    
-    function verifyUniversity(uint256 _universityId, bool _isVerified) public {
-        require(msg.sender == verifier, "Only verifier can verify universities");
-        require(_universityId < universityCounter, "University does not exist");
-        
-        // Find the university by ID (this is a simplified approach)
-        // In a real implementation, you'd need a mapping from ID to address
-        universities[msg.sender].isVerified = FHE.asEbool(_isVerified);
-    }
-    
-    function updateReputation(address user, externalEuint32 reputation, bytes calldata inputProof) public {
-        require(msg.sender == verifier, "Only verifier can update reputation");
-        require(user != address(0), "Invalid user address");
-        
-        euint32 internalReputation = FHE.fromExternal(reputation, inputProof);
-        
-        // Determine if user is student or university based on context
-        if (universities[user].admin != address(0)) {
-            universityReputation[user] = internalReputation;
-        } else {
-            studentReputation[user] = internalReputation;
+        if (_approved) {
+            diplomas[verificationRequests[_requestId].diplomaId].isVerified = true;
         }
         
-        emit ReputationUpdated(user, FHE.decrypt(internalReputation));
+        emit VerificationCompleted(_requestId, _approved, _result);
     }
-    
-    function getDiplomaInfo(uint256 diplomaId) public view returns (
+
+    // View functions for public data
+    function getDiplomaPublicData(uint256 _diplomaId) public view returns (
+        uint256 diplomaId,
+        string memory studentId,
         string memory universityName,
         string memory degreeName,
         string memory major,
-        address student,
-        address university,
-        uint256 issueDate,
-        uint256 expiryDate,
         string memory ipfsHash,
-        bool isActive
+        address studentAddress,
+        uint256 issueDate,
+        bool isVerified
     ) {
-        Diploma storage diploma = diplomas[diplomaId];
+        require(_diplomaId < diplomaCounter, "Diploma does not exist");
+        Diploma memory diploma = diplomas[_diplomaId];
+        
         return (
+            diploma.diplomaId,
+            diploma.studentId,
             diploma.universityName,
             diploma.degreeName,
             diploma.major,
-            diploma.student,
-            diploma.university,
-            diploma.issueDate,
-            diploma.expiryDate,
             diploma.ipfsHash,
-            FHE.decrypt(diploma.isActive)
+            diploma.studentAddress,
+            diploma.issueDate,
+            diploma.isVerified
         );
     }
-    
-    function getTranscriptInfo(uint256 transcriptId) public view returns (
-        string memory universityName,
-        address student,
-        address university,
-        uint256 issueDate,
-        string memory ipfsHash,
-        bool isActive
-    ) {
-        Transcript storage transcript = transcripts[transcriptId];
-        return (
-            transcript.universityName,
-            transcript.student,
-            transcript.university,
-            transcript.issueDate,
-            transcript.ipfsHash,
-            FHE.decrypt(transcript.isActive)
-        );
+
+    function getStudentDiplomas(address _student) public view returns (uint256[] memory) {
+        return studentDiplomas[_student];
     }
-    
-    function getVerificationRequestInfo(uint256 requestId) public view returns (
+
+    function getVerificationRequest(uint256 _requestId) public view returns (
         address requester,
-        address university,
-        uint256 requestDate,
-        uint256 responseDate,
+        uint256 diplomaId,
         string memory purpose,
-        bool isCompleted
+        bool isCompleted,
+        uint256 requestDate,
+        string memory verificationResult
     ) {
-        VerificationRequest storage request = verificationRequests[requestId];
+        require(_requestId < verificationCounter, "Request does not exist");
+        VerificationRequest memory request = verificationRequests[_requestId];
+        
         return (
             request.requester,
-            request.university,
-            request.requestDate,
-            request.responseDate,
+            request.diplomaId,
             request.purpose,
-            FHE.decrypt(request.isCompleted)
+            request.isCompleted,
+            request.requestDate,
+            request.verificationResult
         );
     }
-    
-    function getUniversityInfo(address universityAddress) public view returns (
+
+    function getUniversityInfo(uint256 _universityId) public view returns (
+        uint256 universityId,
         string memory name,
         string memory country,
-        string memory accreditation,
         address admin,
-        uint256 registrationDate,
         bool isVerified,
-        bool isActive
+        bool isActive,
+        uint256 registrationDate
     ) {
-        University storage university = universities[universityAddress];
+        require(_universityId < universityCounter, "University does not exist");
+        University memory university = universities[_universityId];
+        
         return (
+            university.universityId,
             university.name,
             university.country,
-            university.accreditation,
             university.admin,
-            university.registrationDate,
-            FHE.decrypt(university.isVerified),
-            FHE.decrypt(university.isActive)
+            university.isVerified,
+            university.isActive,
+            university.registrationDate
         );
     }
-    
-    function getStudentReputation(address student) public view returns (uint32) {
-        return FHE.decrypt(studentReputation[student]);
-    }
-    
-    function getUniversityReputation(address university) public view returns (uint32) {
-        return FHE.decrypt(universityReputation[university]);
-    }
-    
-    function revokeCredential(uint256 credentialId, bool isDiploma) public {
-        if (isDiploma) {
-            require(diplomas[credentialId].university == msg.sender, "Only issuing university can revoke");
-            diplomas[credentialId].isActive = FHE.asEbool(false);
-        } else {
-            require(transcripts[credentialId].university == msg.sender, "Only issuing university can revoke");
-            transcripts[credentialId].isActive = FHE.asEbool(false);
+
+    function getAllUniversities() public view returns (uint256[] memory) {
+        uint256[] memory universityIds = new uint256[](universityCounter);
+        for (uint256 i = 0; i < universityCounter; i++) {
+            universityIds[i] = i;
         }
+        return universityIds;
     }
-    
-    // Function to get encrypted diploma data for decryption
-    function getDiplomaEncryptedData(uint256 diplomaId) public view returns (
-        bytes32 studentId,
-        bytes32 graduationYear,
-        bytes32 gpa,
-        bytes32 degreeType,
-        bytes32 isVerified,
-        bytes32 isActive
+
+    // FHE encrypted data getters (for university admins only)
+    function getDiplomaEncryptedData(uint256 _diplomaId) public view onlyUniversityAdmin returns (
+        euint32 encryptedGpa,
+        euint32 encryptedGraduationYear,
+        euint8 encryptedDegreeType,
+        ebool encryptedIsApproved
     ) {
-        Diploma storage diploma = diplomas[diplomaId];
+        require(_diplomaId < diplomaCounter, "Diploma does not exist");
+        Diploma memory diploma = diplomas[_diplomaId];
+        
         return (
-            FHE.toBytes32(diploma.studentId),
-            FHE.toBytes32(diploma.graduationYear),
-            FHE.toBytes32(diploma.gpa),
-            FHE.toBytes32(diploma.degreeType),
-            FHE.toBytes32(diploma.isVerified),
-            FHE.toBytes32(diploma.isActive)
-        );
-    }
-    
-    // Function to get encrypted transcript data for decryption
-    function getTranscriptEncryptedData(uint256 transcriptId) public view returns (
-        bytes32 studentId,
-        bytes32 totalCredits,
-        bytes32 completedCredits,
-        bytes32 gpa,
-        bytes32 isVerified,
-        bytes32 isActive
-    ) {
-        Transcript storage transcript = transcripts[transcriptId];
-        return (
-            FHE.toBytes32(transcript.studentId),
-            FHE.toBytes32(transcript.totalCredits),
-            FHE.toBytes32(transcript.completedCredits),
-            FHE.toBytes32(transcript.gpa),
-            FHE.toBytes32(transcript.isVerified),
-            FHE.toBytes32(transcript.isActive)
-        );
-    }
-    
-    // Function to get encrypted verification request data for decryption
-    function getVerificationRequestEncryptedData(uint256 requestId) public view returns (
-        bytes32 requestIdEnc,
-        bytes32 credentialId,
-        bytes32 isDiploma,
-        bytes32 isApproved,
-        bytes32 isCompleted
-    ) {
-        VerificationRequest storage request = verificationRequests[requestId];
-        return (
-            FHE.toBytes32(request.requestId),
-            FHE.toBytes32(request.credentialId),
-            FHE.toBytes32(request.isDiploma),
-            FHE.toBytes32(request.isApproved),
-            FHE.toBytes32(request.isCompleted)
+            diploma.encryptedGpa,
+            diploma.encryptedGraduationYear,
+            diploma.encryptedDegreeType,
+            diploma.encryptedIsApproved
         );
     }
 }
