@@ -21,7 +21,7 @@ import {
 import { useAccount } from "wagmi";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
-import { useGetAllUniversities, useGetDiplomaPublicData, useGetDiplomaEncryptedData } from "@/hooks/useContract";
+import { useGetAllUniversities, useGetDiplomaPublicData, useGetDiplomaEncryptedData, useFHEDiplomaVault } from "@/hooks/useContract";
 
 const UniversityAdminPanel = () => {
   const [searchInput, setSearchInput] = useState("");
@@ -39,6 +39,7 @@ const UniversityAdminPanel = () => {
   
   // Contract hooks
   const { data: universities } = useGetAllUniversities();
+  const { contractAddress } = useFHEDiplomaVault();
   
   // Load recent diplomas on component mount
   useEffect(() => {
@@ -98,27 +99,52 @@ const UniversityAdminPanel = () => {
     try {
       console.log(`Getting diploma ${diplomaId} data from contract...`);
       
-      // For now, we'll simulate getting data from contract
-      // In a real implementation, we would use the useGetDiplomaPublicData hook
-      // But since we need to call it dynamically, we'll need to implement a different approach
+      if (!contractAddress) {
+        console.log("Contract address not available");
+        return null;
+      }
       
-      // Simulate contract call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Use wagmi's useReadContract hook dynamically
+      // We need to make a direct contract call since we can't use hooks in async functions
+      const { readContract } = await import('wagmi/actions');
+      const { getPublicClient } = await import('wagmi');
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
       
-      // Return mock data for now - in real implementation, this would come from contract
-      return {
-        diplomaId: diplomaId,
-        studentId: `STU${diplomaId.toString().padStart(3, '0')}`,
-        universityName: "Harvard University",
-        degreeName: "Bachelor of Science",
-        major: "Computer Science",
-        ipfsHash: "QmHash123...",
-        studentAddress: "0x1234567890123456789012345678901234567890",
-        issueDate: BigInt(Math.floor(Date.now() / 1000) - 86400 * 30), // 30 days ago
-        isVerified: false
-      };
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://1rpc.io/sepolia')
+      });
+      
+      const result = await publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: [
+          {
+            "inputs": [{"name": "_diplomaId", "type": "uint256"}],
+            "name": "getDiplomaPublicData",
+            "outputs": [
+              {"name": "diplomaId", "type": "uint256"},
+              {"name": "studentId", "type": "string"},
+              {"name": "universityName", "type": "string"},
+              {"name": "degreeName", "type": "string"},
+              {"name": "major", "type": "string"},
+              {"name": "ipfsHash", "type": "string"},
+              {"name": "studentAddress", "type": "address"},
+              {"name": "issueDate", "type": "uint256"},
+              {"name": "isVerified", "type": "bool"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ],
+        functionName: 'getDiplomaPublicData',
+        args: [BigInt(diplomaId)]
+      });
+      
+      console.log(`📊 Real contract data for diploma ${diplomaId}:`, result);
+      return result;
     } catch (error) {
-      console.error("Error getting diploma data:", error);
+      console.log(`No diploma found with ID ${diplomaId}:`, error.message);
       return null;
     }
   };
