@@ -131,7 +131,7 @@ const CertificateCard = ({
         {onDecrypt && (
           <Button variant="academic" size="sm" className="flex-1" onClick={onDecrypt}>
             <Shield className="w-3 h-3 mr-1" />
-            解密查看Detail
+            Decrypt & View Details
           </Button>
         )}
       </div>
