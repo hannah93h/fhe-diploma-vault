@@ -29,7 +29,17 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['@zama-fhe/relayer-sdk/bundle']
-    }
+      external: ['@zama-fhe/relayer-sdk/bundle'],
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          wagmi: ['wagmi', 'viem'],
+          fhe: ['@zama-fhe/relayer-sdk']
+        }
+      }
+    },
+    target: 'esnext',
+    minify: 'terser',
+    sourcemap: false
   }
 });
