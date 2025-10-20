@@ -46,6 +46,7 @@ export const useDiplomaManagement = () => {
   const [transcripts, setTranscripts] = useState<DecryptedTranscript[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Get student diploma IDs from contract
   const { data: diplomaIds, isLoading: isLoadingDiplomaIds, error: diplomaIdsError } = useGetStudentDiplomas(address);
@@ -207,7 +208,7 @@ export const useDiplomaManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError]);
+  }, [instance, address, isLoadingDiplomaIds, diplomaIdsError]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
@@ -286,10 +287,20 @@ export const useDiplomaManagement = () => {
   };
 
   useEffect(() => {
-    if (instance && address && !isLoadingDiplomaIds && diplomaIds) {
+    if (instance && address && !isLoadingDiplomaIds && diplomaIds && diplomaIds.length > 0 && !hasLoaded) {
+      console.log('🔍 useEffect: All conditions met, calling loadUserCredentials');
+      setHasLoaded(true);
       loadUserCredentials();
+    } else {
+      console.log('🔍 useEffect: Conditions not met:', {
+        instance: !!instance,
+        address: !!address,
+        isLoadingDiplomaIds,
+        diplomaIds: diplomaIds?.length || 0,
+        hasLoaded
+      });
     }
-  }, [instance, address, isLoadingDiplomaIds, diplomaIds]);
+  }, [instance, address, isLoadingDiplomaIds, diplomaIds?.length, hasLoaded]);
 
   return {
     diplomas,
