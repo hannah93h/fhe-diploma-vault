@@ -71,32 +71,18 @@ const CertificateCard = ({
       <div className="space-y-3 mb-6">
         <div className="flex items-center gap-2 text-sm">
           <Award className="w-4 h-4 text-academic-gold" />
-          <span className="font-medium">{getDegreeTypeName(certificate.degreeType)}</span>
+          <span className="font-medium">Degree</span>
         </div>
         
-        {certificate.graduationYear ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Graduated: {certificate.graduationYear}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Issue Date: {formatDate(certificate.issueDate)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="w-4 h-4" />
+          <span>Issue Date: {formatDate(certificate.issueDate)}</span>
+        </div>
         
-        {certificate.gpa ? (
-          <div className="text-sm">
-            <span className="text-muted-foreground">GPA: </span>
-            <span className="font-semibold text-academic-navy">{certificate.gpa}/4.0</span>
-          </div>
-        ) : (
-          <div className="text-sm">
-            <span className="text-muted-foreground">GPA: </span>
-            <span className="font-semibold text-academic-navy">Encrypted</span>
-          </div>
-        )}
+        <div className="text-sm">
+          <span className="text-muted-foreground">GPA: </span>
+          <span className="font-semibold text-academic-navy">N/A/4.0</span>
+        </div>
 
         <div className="text-sm">
           <span className="text-muted-foreground">Major: </span>

@@ -33,28 +33,8 @@ const Verification = () => {
     }
   }, [address, instance, loadUserCredentials]);
 
-  // Convert decrypted diplomas to display format
-  const credentials = diplomas.map((diploma, index) => ({
-    title: diploma.degreeName || 'Degree Certificate',
-    institution: diploma.universityName || 'University',
-    degree: diploma.degreeName || 'Degree',
-    graduationDate: new Date(diploma.issueDate * 1000).toLocaleDateString(),
-    gpa: diploma.gpa ? `${(Number(diploma.gpa) / 10).toFixed(1)}/4.0` : 'N/A',
-    isVerified: diploma.isVerified,
-    studentId: diploma.studentId ? diploma.studentId.toString() : 'N/A',
-    major: diploma.major || 'N/A',
-    location: "Cambridge, Massachusetts",
-    issueDate: new Date(diploma.issueDate * 1000).toLocaleDateString(),
-    blockchainHash: `0x${diploma.diplomaId.toString(16).padStart(64, '0')}`,
-    encryptionLevel: "FHE-256",
-    honors: ["Magna Cum Laude", "Dean's List"],
-    coursework: [
-      "Advanced Algorithms",
-      "Machine Learning", 
-      "Distributed Systems",
-      "Computer Vision"
-    ]
-  }));
+  // Use diplomas directly as credentials for CertificateCard
+  const credentials = diplomas;
 
   const handleViewDetails = (certificate: any) => {
     setSelectedCertificate(certificate);
