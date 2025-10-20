@@ -5,7 +5,12 @@ async function main() {
   console.log("Checking contract status...");
 
   // Connect to the deployed contract
-  const contractAddress = "0x337F0c42c8E12689ED509c7549c3a539A2C6a7eA";
+  const contractAddress = process.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+  
+  if (!contractAddress) {
+    console.error("❌ Contract address not configured. Please set VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS or CONTRACT_ADDRESS environment variable.");
+    process.exit(1);
+  }
   const FHEDiplomaVault = await ethers.getContractFactory("FHEDiplomaVault");
   const contract = FHEDiplomaVault.attach(contractAddress);
   
