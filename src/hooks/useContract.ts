@@ -1,4 +1,4 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
 import { CONTRACT_ADDRESSES } from '@/lib/contracts';
 import { useChainId } from 'wagmi';
 
@@ -495,6 +495,44 @@ export const FHEDiplomaVaultABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
+      }
+    ],
+    "name": "isAdmin",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
+      }
+    ],
+    "name": "isUniversityAdmin",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const;
 
@@ -529,11 +567,11 @@ export const useRegisterUniversity = () => {
     }
 
     return writeContractAsync({
-      address: contractAddress,
+      address: contractAddress as `0x${string}`,
       abi,
       functionName: 'registerUniversity',
       args: [name, country, accreditation],
-    });
+    } as any);
   };
 
   return {
@@ -696,7 +734,7 @@ export const useCreateDiploma = () => {
     }
 
     return writeContractAsync({
-      address: contractAddress,
+      address: contractAddress as `0x${string}`,
       abi: FHEDiplomaVaultABI,
       functionName: 'createDiploma',
       args: [
@@ -710,7 +748,7 @@ export const useCreateDiploma = () => {
         encryptedDegreeType,
         inputProof
       ],
-    });
+    } as any);
   };
 
   return {
@@ -720,5 +758,45 @@ export const useCreateDiploma = () => {
     isConfirming,
     isConfirmed,
     error,
+  };
+};
+
+// Hook to check if user is admin
+export const useIsAdmin = () => {
+  const { address } = useAccount();
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault as `0x${string}`,
+    abi: FHEDiplomaVaultABI,
+    functionName: 'isAdmin',
+    args: [address as `0x${string}`],
+    query: {
+      enabled: !!address
+    }
+  });
+
+  return {
+    isAdmin: data || false,
+    isLoading,
+    error
+  };
+};
+
+// Hook to check if user is university admin
+export const useIsUniversityAdmin = () => {
+  const { address } = useAccount();
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault as `0x${string}`,
+    abi: FHEDiplomaVaultABI,
+    functionName: 'isUniversityAdmin',
+    args: [address as `0x${string}`],
+    query: {
+      enabled: !!address
+    }
+  });
+
+  return {
+    isUniversityAdmin: data || false,
+    isLoading,
+    error
   };
 };

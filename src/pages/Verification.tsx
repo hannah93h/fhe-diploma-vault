@@ -10,7 +10,7 @@ import Header from "@/components/layout/Header";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useDiplomaManagement } from "@/hooks/useDiplomaManagement";
-import { useGetDiplomaEncryptedData } from "@/hooks/useContract";
+import { useGetDiplomaEncryptedData, useIsAdmin, useIsUniversityAdmin } from "@/hooks/useContract";
 import { useEthersSigner } from "@/hooks/useEthersSigner";
 import { useAccount } from "wagmi";
 import { GraduationCap, Users, Shield, Plus, Eye } from "lucide-react";
@@ -19,12 +19,15 @@ import certificateIcon from "@/assets/certificate-icon.jpg";
 const Verification = () => {
   const [activeTab, setActiveTab] = useState("student");
   const [showCreator, setShowCreator] = useState(false);
+  const [decryptedData, setDecryptedData] = useState<Record<number, any>>({});
   
   const { address } = useAccount();
   const { instance, isLoading: fheLoading, error: fheError } = useZamaInstance();
   const { isEncrypting, isDecrypting } = useFHEEncryption();
   const { diplomas, transcripts, isLoading: credentialsLoading, error: credentialsError, loadUserCredentials } = useDiplomaManagement();
   const signer = useEthersSigner();
+  const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
+  const { isUniversityAdmin, isLoading: isUniversityAdminLoading } = useIsUniversityAdmin();
 
   // Load user credentials when wallet connects
   useEffect(() => {
@@ -32,6 +35,13 @@ const Verification = () => {
       loadUserCredentials();
     }
   }, [address, instance, loadUserCredentials]);
+
+  // Auto-switch to student tab if user is not admin and currently on university tab
+  useEffect(() => {
+    if (!isAdminLoading && !isUniversityAdminLoading && !isAdmin && !isUniversityAdmin && activeTab === 'university') {
+      setActiveTab('student');
+    }
+  }, [isAdmin, isUniversityAdmin, isAdminLoading, isUniversityAdminLoading, activeTab]);
 
   // Use diplomas directly as credentials for CertificateCard
   const credentials = diplomas;
@@ -157,8 +167,17 @@ const Verification = () => {
 
       console.log('Updated certificate with decrypted data:', updatedCertificate);
       
-      // Show success message
-      alert(`Decryption successful!\nGPA: ${updatedCertificate.gpa}\nGraduation Year: ${updatedCertificate.graduationYear}\nDegree Type: ${updatedCertificate.degreeType}`);
+      // Store decrypted data in state for frontend display
+      setDecryptedData(prev => ({
+        ...prev,
+        [certificate.diplomaId]: {
+          gpa: updatedCertificate.gpa,
+          graduationYear: updatedCertificate.graduationYear,
+          degreeType: updatedCertificate.degreeType
+        }
+      }));
+      
+      console.log('Decrypted data stored in state for diploma:', certificate.diplomaId);
       
     } catch (error) {
       console.error('Decryption failed:', error);
@@ -175,7 +194,7 @@ const Verification = () => {
       <section className="pt-24 pb-16 bg-gradient-to-br from-background to-certificate-bg">
         <div className="container mx-auto px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-6xl mx-auto">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsList className={`grid w-full ${(isAdmin || isUniversityAdmin) ? 'grid-cols-3' : 'grid-cols-2'} mb-8`}>
               <TabsTrigger 
                 value="student" 
                 className="data-[state=active]:bg-academic-navy data-[state=active]:text-primary-foreground"
@@ -183,13 +202,15 @@ const Verification = () => {
                 <GraduationCap className="w-4 h-4 mr-2" />
                 My Portal
               </TabsTrigger>
-              <TabsTrigger 
-                value="university"
-                className="data-[state=active]:bg-academic-navy data-[state=active]:text-primary-foreground"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                University Admin
-              </TabsTrigger>
+              {(isAdmin || isUniversityAdmin) && (
+                <TabsTrigger 
+                  value="university"
+                  className="data-[state=active]:bg-academic-navy data-[state=active]:text-primary-foreground"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  University Admin
+                </TabsTrigger>
+              )}
               <TabsTrigger 
                 value="employer"
                 className="data-[state=active]:bg-academic-navy data-[state=active]:text-primary-foreground"
@@ -278,13 +299,21 @@ const Verification = () => {
                         </div>
                       </Card>
                     ) : (
-                      credentials.map((credential, index) => (
-                        <CertificateCard
-                          key={index}
-                          certificate={credential}
-                          onDecrypt={() => handleDecrypt(credential)}
-                        />
-                      ))
+                      credentials.map((credential, index) => {
+                        // Merge decrypted data with credential data
+                        const decryptedCredential = {
+                          ...credential,
+                          ...(decryptedData[credential.diplomaId] || {})
+                        };
+                        
+                        return (
+                          <CertificateCard
+                            key={index}
+                            certificate={decryptedCredential}
+                            onDecrypt={() => handleDecrypt(credential)}
+                          />
+                        );
+                      })
                     )}
                   </div>
                 </div>
