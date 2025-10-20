@@ -47,6 +47,7 @@ export const useDiplomaManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Get student diploma IDs from contract
   const { data: diplomaIds, isLoading: isLoadingDiplomaIds, error: diplomaIdsError } = useGetStudentDiplomas(address);
@@ -122,6 +123,11 @@ export const useDiplomaManagement = () => {
       return;
     }
 
+    if (isLoadingData) {
+      console.log('⏳ Already loading data, skipping...');
+      return;
+    }
+
     if (diplomaIdsError) {
       console.error('❌ Diploma IDs error:', diplomaIdsError);
       setError(`Failed to load diploma IDs: ${diplomaIdsError.message || diplomaIdsError}`);
@@ -136,6 +142,7 @@ export const useDiplomaManagement = () => {
     }
 
     setIsLoading(true);
+    setIsLoadingData(true);
     setError(null);
 
     try {
@@ -185,8 +192,9 @@ export const useDiplomaManagement = () => {
       setError('Failed to load credentials');
     } finally {
       setIsLoading(false);
+      setIsLoadingData(false);
     }
-  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError]);
+  }, [instance, address, diplomaIds, isLoadingDiplomaIds, diplomaIdsError, isLoadingData]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
@@ -265,12 +273,12 @@ export const useDiplomaManagement = () => {
   };
 
   useEffect(() => {
-    if (instance && address && !isLoadingDiplomaIds && !hasLoaded) {
+    if (instance && address && !isLoadingDiplomaIds && !hasLoaded && !isLoadingData) {
       console.log('🔍 useEffect: Calling loadUserCredentials');
       setHasLoaded(true);
       loadUserCredentials();
     }
-  }, [instance, address, isLoadingDiplomaIds, hasLoaded, loadUserCredentials]);
+  }, [instance, address, isLoadingDiplomaIds, hasLoaded, isLoadingData, loadUserCredentials]);
 
   return {
     diplomas,
