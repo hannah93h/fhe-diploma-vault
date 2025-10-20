@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +10,8 @@ import Header from "@/components/layout/Header";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useDiplomaManagement } from "@/hooks/useDiplomaManagement";
-import { GraduationCap, Users, Plus, Shield } from "lucide-react";
+import { useAccount } from "wagmi";
+import { GraduationCap, Users, Plus, Shield, Eye, Share2, QrCode } from "lucide-react";
 import certificateIcon from "@/assets/certificate-icon.jpg";
 
 const Verification = () => {
@@ -19,31 +20,43 @@ const Verification = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
   
+  const { address } = useAccount();
   const { instance, isLoading: fheLoading, error: fheError } = useZamaInstance();
   const { isEncrypting, isDecrypting } = useFHEEncryption();
   const { diplomas, transcripts, isLoading: credentialsLoading, error: credentialsError, loadUserCredentials } = useDiplomaManagement();
 
+  // Load user credentials when wallet connects
+  useEffect(() => {
+    if (address && instance) {
+      loadUserCredentials();
+    }
+  }, [address, instance, loadUserCredentials]);
+
   // Convert decrypted diplomas to display format
   const credentials = diplomas.map((diploma, index) => ({
-    title: diploma.degreeName,
-    institution: diploma.universityName,
-    degree: diploma.degreeName,
-    graduationDate: new Date(diploma.issueDate).toLocaleDateString(),
-    gpa: `${(diploma.gpa / 10).toFixed(1)}/4.0`,
+    title: diploma.degreeName || 'Degree Certificate',
+    institution: diploma.universityName || 'University',
+    degree: diploma.degreeName || 'Degree',
+    graduationDate: new Date(diploma.issueDate * 1000).toLocaleDateString(),
+    gpa: diploma.gpa ? `${(Number(diploma.gpa) / 10).toFixed(1)}/4.0` : 'N/A',
     isVerified: diploma.isVerified,
-    studentId: diploma.studentId.toString(),
-    major: diploma.major,
+    studentId: diploma.studentId ? diploma.studentId.toString() : 'N/A',
+    major: diploma.major || 'N/A',
     location: "Cambridge, Massachusetts",
-    issueDate: new Date(diploma.issueDate).toLocaleDateString(),
+    issueDate: new Date(diploma.issueDate * 1000).toLocaleDateString(),
     blockchainHash: `0x${diploma.diplomaId.toString(16).padStart(64, '0')}`,
     encryptionLevel: "FHE-256",
     honors: ["Magna Cum Laude", "Dean's List"],
     coursework: [
       "Advanced Algorithms",
-      "Machine Learning",
+      "Machine Learning", 
       "Distributed Systems",
       "Computer Vision"
-    ]
+    ],
+    // Simple verification data
+    verificationId: `VERIFY_${diploma.diplomaId}`,
+    shareableCode: `FHE_${diploma.diplomaId}`,
+    publicVerificationUrl: `${window.location.origin}/verify/${diploma.diplomaId}`
   }));
 
   const handleViewDetails = (certificate: any) => {
@@ -54,6 +67,24 @@ const Verification = () => {
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedCertificate(null);
+  };
+
+  const handleShareCredential = (certificate: any) => {
+    const verificationUrl = `${window.location.origin}/verify/${certificate.blockchainHash}`;
+    navigator.clipboard.writeText(verificationUrl);
+    alert(`Verification link copied to clipboard: ${verificationUrl}`);
+  };
+
+  const handleGenerateQR = (certificate: any) => {
+    const qrData = {
+      type: "FHE_DIPLOMA_VERIFICATION",
+      diplomaId: certificate.blockchainHash,
+      studentAddress: address,
+      verificationUrl: certificate.publicVerificationUrl,
+      timestamp: Date.now()
+    };
+    console.log("QR Code Data:", qrData);
+    alert("QR Code generated! (In a real implementation, this would show a QR code)");
   };
 
   return (
@@ -94,19 +125,20 @@ const Verification = () => {
                       />
                       <div>
                         <h2 className="text-2xl font-bold text-academic-navy">Your Credentials</h2>
-                        <p className="text-muted-foreground">Manage your encrypted educational records</p>
+                        <p className="text-muted-foreground">Create and manage your encrypted educational records</p>
                       </div>
                     </div>
                     <Button
-                      variant="certificate"
+                      variant="academic"
                       onClick={() => setShowCreator(!showCreator)}
-                      className="flex items-center gap-2"
+                      className="bg-academic-navy hover:bg-academic-navy/90"
                     >
-                      <Plus className="w-4 h-4" />
-                      {showCreator ? 'Hide Creator' : 'Create New'}
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create New Credential
                     </Button>
                   </div>
 
+                  {/* Credential Creator */}
                   {showCreator && (
                     <CredentialCreator onCredentialCreated={() => {
                       setShowCreator(false);
@@ -114,53 +146,123 @@ const Verification = () => {
                     }} />
                   )}
 
-                  {credentialsLoading ? (
-                    <div className="text-center py-8">
-                      <div className="inline-flex items-center gap-2 text-muted-foreground">
-                        <Shield className="w-4 h-4 animate-spin" />
-                        Loading encrypted credentials...
-                      </div>
-                    </div>
-                  ) : credentialsError ? (
-                    <div className="text-center py-8">
-                      <div className="text-red-600">
-                        Error loading credentials: {credentialsError}
-                      </div>
-                    </div>
-                  ) : credentials.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="text-muted-foreground">
-                        No credentials found. Create your first encrypted credential above.
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-6">
-                      {credentials.map((credential, index) => (
-                        <CertificateCard 
-                          key={index} 
-                          {...credential} 
+                  {/* Credentials List */}
+                  <div className="space-y-4">
+                    {credentialsLoading ? (
+                      <Card className="p-8 text-center">
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-academic-navy"></div>
+                          Loading credentials...
+                        </div>
+                      </Card>
+                    ) : credentialsError ? (
+                      <Card className="p-8 text-center">
+                        <div className="text-red-600">
+                          <p>Error loading credentials: {credentialsError}</p>
+                          <Button 
+                            variant="outline" 
+                            onClick={loadUserCredentials}
+                            className="mt-4"
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      </Card>
+                    ) : credentials.length === 0 ? (
+                      <Card className="p-8 text-center">
+                        <div className="space-y-4">
+                          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-academic-navy to-primary rounded-full flex items-center justify-center">
+                            <GraduationCap className="w-8 h-8 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-academic-navy mb-2">No Credentials Found</h3>
+                            <p className="text-muted-foreground mb-4">
+                              You don't have any credentials yet. Create your first encrypted diploma.
+                            </p>
+                            <Button
+                              variant="academic"
+                              onClick={() => setShowCreator(true)}
+                              className="bg-academic-navy hover:bg-academic-navy/90"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Create Your First Credential
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ) : (
+                      credentials.map((credential, index) => (
+                        <CertificateCard
+                          key={index}
+                          certificate={credential}
                           onViewDetails={() => handleViewDetails(credential)}
+                          onShare={() => handleShareCredential(credential)}
+                          onGenerateQR={() => handleGenerateQR(credential)}
                         />
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="employer" className="space-y-8">
-              <EmployerVerification />
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-academic-navy to-primary rounded-lg">
+                      <Users className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-academic-navy">Employer Verification</h2>
+                      <p className="text-muted-foreground">Verify educational credentials through FHE queries</p>
+                    </div>
+                  </div>
+
+                  {/* Simple Verification Process */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <Card className="p-4 text-center border-2 border-academic-gold">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-academic-navy to-primary rounded-full flex items-center justify-center">
+                        <Share2 className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                      <h3 className="font-semibold text-academic-navy mb-2">1. Student Shares</h3>
+                      <p className="text-sm text-muted-foreground">Student provides wallet address or verification link</p>
+                    </Card>
+                    
+                    <Card className="p-4 text-center border-2 border-academic-gold">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-academic-navy to-primary rounded-full flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                      <h3 className="font-semibold text-academic-navy mb-2">2. FHE Query</h3>
+                      <p className="text-sm text-muted-foreground">Encrypted query without revealing sensitive data</p>
+                    </Card>
+                    
+                    <Card className="p-4 text-center border-2 border-academic-gold">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-academic-navy to-primary rounded-full flex items-center justify-center">
+                        <Eye className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                      <h3 className="font-semibold text-academic-navy mb-2">3. Verify Result</h3>
+                      <p className="text-sm text-muted-foreground">Get verification status without seeing raw data</p>
+                    </Card>
+                  </div>
+
+                  {/* Employer Verification Component */}
+                  <EmployerVerification />
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
       </section>
 
       {/* Certificate Detail Modal */}
-      {selectedCertificate && (
+      {isDetailModalOpen && selectedCertificate && (
         <CertificateDetailModal
+          certificate={selectedCertificate}
           isOpen={isDetailModalOpen}
           onClose={handleCloseDetailModal}
-          certificate={selectedCertificate}
+          onShare={() => handleShareCredential(selectedCertificate)}
+          onGenerateQR={() => handleGenerateQR(selectedCertificate)}
         />
       )}
     </div>

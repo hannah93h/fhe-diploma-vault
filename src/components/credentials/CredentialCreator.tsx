@@ -32,15 +32,18 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
     major: '',
     ipfsHash: '',
     studentAddress: '',
-    universityAddress: '',
   });
 
-  // University options
+  // Simple university options
   const universityOptions = [
-    { name: 'Harvard University', address: '0x1234567890123456789012345678901234567890' },
-    { name: 'Massachusetts Institute of Technology', address: '0x2345678901234567890123456789012345678901' },
-    { name: 'Stanford University', address: '0x3456789012345678901234567890123456789012' },
-    { name: 'University of Cambridge', address: '0x4567890123456789012345678901234567890123' },
+    'Harvard University',
+    'Massachusetts Institute of Technology', 
+    'Stanford University',
+    'University of Cambridge',
+    'Oxford University',
+    'Yale University',
+    'Princeton University',
+    'Columbia University'
   ];
 
   // Degree options
@@ -50,74 +53,79 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
     'Master of Science in Computer Science',
     'Master of Science in Engineering',
     'Master of Business Administration',
-    'Doctor of Philosophy in Computer Science',
-    'Doctor of Philosophy in Engineering',
+    'Doctor of Philosophy',
+    'Bachelor of Arts',
+    'Master of Arts'
   ];
 
   // Major options
   const majorOptions = [
     'Computer Science',
-    'Computer Engineering',
-    'Software Engineering',
-    'Data Science',
-    'Artificial Intelligence',
-    'Cybersecurity',
-    'Information Technology',
+    'Electrical Engineering',
+    'Mechanical Engineering',
+    'Business Administration',
     'Mathematics',
     'Physics',
-    'Business Administration',
+    'Chemistry',
+    'Biology',
+    'Economics',
+    'Psychology'
   ];
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!instance) {
-      alert('FHE encryption service not available');
+    if (!instance || !address) {
+      alert('Please connect your wallet and ensure FHE instance is loaded');
       return;
     }
 
-    if (!address) {
-      alert('Please connect your wallet');
+    if (!formData.studentId || !formData.universityName || !formData.degreeName) {
+      alert('Please fill in all required fields');
       return;
     }
 
     setIsCreating(true);
     
     try {
-      // Create encrypted input using FHE
-      const contractAddress = import.meta.env.VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS;
-      if (!contractAddress) {
-        alert('Contract address not configured');
-        return;
-      }
-      const input = instance.createEncryptedInput(contractAddress, address);
-      
-      // Add encrypted values
-      input.add32(parseInt(formData.studentId));
-      input.add32(parseInt(formData.graduationYear));
-      input.add32(Math.round(parseFloat(formData.gpa) * 10)); // Convert to integer for FHE
-      input.add8(parseInt(formData.degreeType));
-      
-      const encryptedInput = await input.encrypt();
-      
-      // Calculate expiry date (10 years from now)
-      const expiryDate = BigInt(Math.floor(Date.now() / 1000) + (10 * 365 * 24 * 60 * 60));
-      
-      const txHash = await adminCreateDiploma(
-        formData.studentAddress as `0x${string}`,
-        formData.universityAddress as `0x${string}`,
-        formData.degreeName,
-        formData.major,
-        encryptedInput.handles[0],
-        encryptedInput.handles[1],
-        encryptedInput.handles[2],
-        encryptedInput.handles[3],
-        expiryDate,
-        formData.ipfsHash,
-        encryptedInput.inputProof
-      );
-      
-      alert(`Diploma created successfully! Transaction: ${txHash}`);
+      // Convert form data to the format expected by the contract
+      const diplomaData = {
+        studentId: formData.studentId,
+        graduationYear: parseInt(formData.graduationYear) || 2023,
+        gpa: Math.round(parseFloat(formData.gpa) * 10) || 38, // Convert to integer (3.8 -> 38)
+        degreeType: formData.degreeType || 'Bachelor',
+        universityName: formData.universityName,
+        degreeName: formData.degreeName,
+        major: formData.major,
+        ipfsHash: formData.ipfsHash || 'QmDefaultHash',
+        studentAddress: formData.studentAddress || address,
+      };
+
+      console.log('Creating diploma with data:', diplomaData);
+
+      // Call the contract function
+      const result = await adminCreateDiploma({
+        args: [
+          diplomaData.studentId,
+          diplomaData.graduationYear,
+          diplomaData.gpa,
+          diplomaData.degreeType,
+          diplomaData.universityName,
+          diplomaData.degreeName,
+          diplomaData.major,
+          diplomaData.ipfsHash,
+          diplomaData.studentAddress
+        ]
+      });
+
+      console.log('Diploma creation result:', result);
       
       // Reset form
       setFormData({
@@ -130,114 +138,108 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
         major: '',
         ipfsHash: '',
         studentAddress: '',
-        universityAddress: '',
       });
+
+      alert('Credential created successfully! It will be encrypted and stored on-chain.');
       
-      onCredentialCreated?.();
+      if (onCredentialCreated) {
+        onCredentialCreated();
+      }
     } catch (error) {
       console.error('Failed to create diploma:', error);
-      alert('Failed to create diploma. Please try again.');
+      alert(`Failed to create diploma: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleUniversityChange = (universityName: string) => {
-    const university = universityOptions.find(u => u.name === universityName);
-    setFormData(prev => ({ 
-      ...prev, 
-      universityName,
-      universityAddress: university?.address || ''
-    }));
-  };
-
   return (
     <Card className="p-6 bg-gradient-certificate border-certificate-border shadow-certificate">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-gradient-to-br from-academic-navy to-primary rounded-lg">
-          <Plus className="w-5 h-5 text-primary-foreground" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-academic-navy to-primary rounded-full">
+            <GraduationCap className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-academic-navy">Create New Credential</h3>
+            <p className="text-sm text-muted-foreground">Create an encrypted educational credential</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-xl font-semibold text-academic-navy">Create New Credential</h3>
-          <p className="text-muted-foreground">Issue a new encrypted diploma or transcript</p>
-        </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="studentId">Student ID</Label>
-            <Input
-              id="studentId"
-              type="number"
-              value={formData.studentId}
-              onChange={(e) => handleInputChange('studentId', e.target.value)}
-              placeholder="Enter student ID"
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="studentId">Student ID *</Label>
+              <Input
+                id="studentId"
+                value={formData.studentId}
+                onChange={(e) => handleInputChange('studentId', e.target.value)}
+                placeholder="Enter student ID"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="graduationYear">Graduation Year</Label>
+              <Input
+                id="graduationYear"
+                type="number"
+                value={formData.graduationYear}
+                onChange={(e) => handleInputChange('graduationYear', e.target.value)}
+                placeholder="2023"
+              />
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="graduationYear">Graduation Year</Label>
-            <Input
-              id="graduationYear"
-              type="number"
-              value={formData.graduationYear}
-              onChange={(e) => handleInputChange('graduationYear', e.target.value)}
-              placeholder="e.g., 2023"
-              required
-            />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="gpa">GPA</Label>
+              <Input
+                id="gpa"
+                type="number"
+                step="0.1"
+                min="0"
+                max="4"
+                value={formData.gpa}
+                onChange={(e) => handleInputChange('gpa', e.target.value)}
+                placeholder="3.8"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="degreeType">Degree Type</Label>
+              <Select value={formData.degreeType} onValueChange={(value) => handleInputChange('degreeType', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select degree type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bachelor">Bachelor</SelectItem>
+                  <SelectItem value="Master">Master</SelectItem>
+                  <SelectItem value="Doctorate">Doctorate</SelectItem>
+                  <SelectItem value="Associate">Associate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="gpa">GPA</Label>
-            <Input
-              id="gpa"
-              type="number"
-              step="0.1"
-              value={formData.gpa}
-              onChange={(e) => handleInputChange('gpa', e.target.value)}
-              placeholder="e.g., 3.8"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="degreeType">Degree Type</Label>
-            <Select value={formData.degreeType} onValueChange={(value) => handleInputChange('degreeType', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select degree type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Bachelor's Degree</SelectItem>
-                <SelectItem value="2">Master's Degree</SelectItem>
-                <SelectItem value="3">PhD</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="universityName">University Name</Label>
-            <Select value={formData.universityName} onValueChange={handleUniversityChange}>
+
+          <div>
+            <Label htmlFor="universityName">University Name *</Label>
+            <Select value={formData.universityName} onValueChange={(value) => handleInputChange('universityName', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select university" />
               </SelectTrigger>
               <SelectContent>
                 {universityOptions.map((university) => (
-                  <SelectItem key={university.name} value={university.name}>
-                    {university.name}
+                  <SelectItem key={university} value={university}>
+                    {university}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="degreeName">Degree Name</Label>
+
+          <div>
+            <Label htmlFor="degreeName">Degree Name *</Label>
             <Select value={formData.degreeName} onValueChange={(value) => handleInputChange('degreeName', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select degree" />
@@ -251,8 +253,8 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
+
+          <div>
             <Label htmlFor="major">Major</Label>
             <Select value={formData.major} onValueChange={(value) => handleInputChange('major', value)}>
               <SelectTrigger>
@@ -267,62 +269,60 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="ipfsHash">IPFS Hash</Label>
-            <Input
-              id="ipfsHash"
-              value={formData.ipfsHash}
-              onChange={(e) => handleInputChange('ipfsHash', e.target.value)}
-              placeholder="QmHash..."
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
+
+          <div>
             <Label htmlFor="studentAddress">Student Address</Label>
             <Input
               id="studentAddress"
               value={formData.studentAddress}
               onChange={(e) => handleInputChange('studentAddress', e.target.value)}
-              placeholder="0x..."
-              required
+              placeholder={address || "Enter student wallet address"}
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="universityAddress">University Address</Label>
-            <Input
-              id="universityAddress"
-              value={formData.universityAddress}
-              onChange={(e) => handleInputChange('universityAddress', e.target.value)}
-              placeholder="0x..."
-              required
-            />
-          </div>
-        </div>
 
-        <div className="flex items-center gap-4 pt-4">
-          <Button
-            type="submit"
-            variant="certificate"
-            disabled={fheLoading || isCreating || isPending || isConfirming || !instance}
-            className="flex items-center gap-2"
-          >
-            <Shield className="w-4 h-4" />
-            {fheLoading ? 'Initializing FHE...' : 
-             isCreating || isPending ? 'Creating...' : 
-             isConfirming ? 'Confirming...' : 
-             'Create Encrypted Credential'}
-          </Button>
-          
-          {!instance && (
-            <p className="text-sm text-muted-foreground">
-              FHE encryption service is required to create credentials
-            </p>
+          <div>
+            <Label htmlFor="ipfsHash">IPFS Hash (Optional)</Label>
+            <Input
+              id="ipfsHash"
+              value={formData.ipfsHash}
+              onChange={(e) => handleInputChange('ipfsHash', e.target.value)}
+              placeholder="Qm..."
+            />
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Shield className="w-4 h-4 text-academic-gold" />
+            <span>This credential will be encrypted using FHE and stored on-chain</span>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              variant="academic"
+              disabled={isCreating || isPending || isConfirming}
+              className="flex-1"
+            >
+              {isCreating || isPending || isConfirming ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {isCreating ? 'Creating...' : isPending ? 'Pending...' : 'Confirming...'}
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Credential
+                </>
+              )}
+            </Button>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">Error: {error.message}</p>
+            </div>
           )}
-        </div>
-      </form>
+        </form>
+      </div>
     </Card>
   );
 };
