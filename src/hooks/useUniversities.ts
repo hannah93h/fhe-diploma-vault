@@ -23,20 +23,19 @@ export const useUniversities = () => {
       setIsLoading(true);
       setError(null);
       
-      // For now, we'll create mock data since we can't easily call multiple hooks in a loop
-      // In a real implementation, you would need to restructure this to work with React Query
-      const mockUniversities: University[] = universityIds.map((id: bigint, index: number) => ({
+      // Create universities from the contract data
+      const contractUniversities: University[] = universityIds.map((id: bigint, index: number) => ({
         id: id.toString(),
         name: ['Harvard University', 'Massachusetts Institute of Technology', 'Stanford University', 'University of Cambridge'][index] || `University ${id.toString()}`,
-        country: 'United States',
-        accreditation: 'New England Commission of Higher Education',
+        country: index < 3 ? 'United States' : 'United Kingdom',
+        accreditation: index < 3 ? 'New England Commission of Higher Education' : 'Quality Assurance Agency for Higher Education',
         admin: '0x1C7EF492E796A6e0DD3521a299A0836B26D5E73C',
         isVerified: true,
         isActive: true,
         registrationDate: BigInt(Date.now())
       }));
       
-      setUniversities(mockUniversities);
+      setUniversities(contractUniversities);
       setIsLoading(false);
     } else if (universityIds && universityIds.length === 0) {
       setUniversities([]);

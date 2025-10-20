@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { useZamaInstance } from './useZamaInstance';
 import { useFHEEncryption } from './useFHEEncryption';
@@ -51,7 +51,7 @@ export const useDiplomaManagement = () => {
   const mockDiplomaIds = [1, 2];
   const mockTranscriptIds = [1, 2];
 
-  const loadUserCredentials = async () => {
+  const loadUserCredentials = useCallback(async () => {
     if (!instance || !address) {
       setError('Wallet not connected or FHE not initialized');
       return;
@@ -64,57 +64,14 @@ export const useDiplomaManagement = () => {
       const decryptedDiplomas: DecryptedDiploma[] = [];
       const decryptedTranscripts: DecryptedTranscript[] = [];
 
-      // Load diplomas
-      for (const diplomaId of mockDiplomaIds) {
-        try {
-          // In a real implementation, you would call the contract here
-          // For now, we'll use mock data that simulates the decryption process
-          const mockDiploma: DecryptedDiploma = {
-            diplomaId,
-            studentId: 2021001 + diplomaId,
-            graduationYear: 2023 - diplomaId + 1,
-            gpa: 38, // 3.8 * 10 for FHE representation
-            degreeType: diplomaId === 1 ? 2 : 1, // Master or Bachelor
-            isVerified: true,
-            isActive: true,
-            universityName: diplomaId === 1 ? 'Harvard University' : 'MIT',
-            degreeName: diplomaId === 1 ? 'Master of Computer Science' : 'Bachelor of Science in Engineering',
-            major: 'Computer Science',
-            student: address,
-            university: '0x1234567890123456789012345678901234567890',
-            issueDate: Date.now() - (diplomaId * 365 * 24 * 60 * 60 * 1000),
-            expiryDate: Date.now() + (10 * 365 * 24 * 60 * 60 * 1000),
-            ipfsHash: `QmMockHash${diplomaId}`
-          };
-          decryptedDiplomas.push(mockDiploma);
-        } catch (err) {
-          console.error(`Failed to load diploma ${diplomaId}:`, err);
-        }
-      }
-
-      // Load transcripts
-      for (const transcriptId of mockTranscriptIds) {
-        try {
-          const mockTranscript: DecryptedTranscript = {
-            transcriptId,
-            studentId: 2021001 + transcriptId,
-            totalCredits: 120,
-            completedCredits: 120,
-            gpa: 39, // 3.9 * 10 for FHE representation
-            isVerified: true,
-            isActive: true,
-            universityName: transcriptId === 1 ? 'Harvard University' : 'MIT',
-            student: address,
-            university: '0x1234567890123456789012345678901234567890',
-            issueDate: Date.now() - (transcriptId * 365 * 24 * 60 * 60 * 1000),
-            ipfsHash: `QmMockTranscriptHash${transcriptId}`
-          };
-          decryptedTranscripts.push(mockTranscript);
-        } catch (err) {
-          console.error(`Failed to load transcript ${transcriptId}:`, err);
-        }
-      }
-
+      // For now, return empty arrays since we don't have real diploma data yet
+      // In the future, this would:
+      // 1. Get diploma IDs from contract for the user
+      // 2. Fetch encrypted data for each diploma
+      // 3. Decrypt the data using FHE
+      
+      console.log('Loading credentials for address:', address);
+      
       setDiplomas(decryptedDiplomas);
       setTranscripts(decryptedTranscripts);
     } catch (err) {
@@ -123,7 +80,7 @@ export const useDiplomaManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [instance, address]);
 
   const createDiploma = async (diplomaData: {
     studentId: number;
@@ -205,7 +162,7 @@ export const useDiplomaManagement = () => {
     if (instance && address) {
       loadUserCredentials();
     }
-  }, [instance, address]);
+  }, [loadUserCredentials]);
 
   return {
     diplomas,
