@@ -31,6 +31,7 @@ const UniversityAdminPanel = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [verificationNotes, setVerificationNotes] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(false);
   
   const { address } = useAccount();
   const { instance } = useZamaInstance();
@@ -38,6 +39,59 @@ const UniversityAdminPanel = () => {
   
   // Contract hooks
   const { data: universities } = useGetAllUniversities();
+  
+  // Load recent diplomas on component mount
+  useEffect(() => {
+    loadRecentDiplomas();
+  }, []);
+  
+  // Function to load recent diplomas
+  const loadRecentDiplomas = async () => {
+    setIsLoadingRecent(true);
+    
+    try {
+      console.log("📚 Loading recent diplomas...");
+      
+      // For now, we'll load diplomas with IDs 0-9 (assuming there are at least 10 diplomas)
+      // In a real implementation, we would need a contract function to get recent diplomas
+      const recentDiplomas = [];
+      
+      for (let i = 0; i < 10; i++) {
+        try {
+          const diplomaData = await getDiplomaPublicData(i);
+          if (diplomaData) {
+            const result = {
+              diplomaId: i.toString(),
+              studentId: diplomaData.studentId,
+              studentName: `Student ${diplomaData.studentId}`,
+              universityName: diplomaData.universityName,
+              degreeName: diplomaData.degreeName,
+              major: diplomaData.major,
+              issueDate: new Date(Number(diplomaData.issueDate) * 1000).toLocaleDateString(),
+              isVerified: diplomaData.isVerified,
+              encryptedData: {
+                gpa: "Encrypted",
+                graduationYear: "Encrypted",
+                degreeType: "Encrypted",
+                isApproved: "Encrypted"
+              }
+            };
+            recentDiplomas.push(result);
+          }
+        } catch (error) {
+          console.log(`No diploma found with ID ${i}`);
+          // Continue to next ID
+        }
+      }
+      
+      setSearchResults(recentDiplomas);
+      console.log(`✅ Loaded ${recentDiplomas.length} recent diplomas`);
+    } catch (error) {
+      console.error("Error loading recent diplomas:", error);
+    } finally {
+      setIsLoadingRecent(false);
+    }
+  };
   
   // Function to get diploma data from contract
   const getDiplomaPublicData = async (diplomaId: number) => {
@@ -236,15 +290,24 @@ const UniversityAdminPanel = () => {
               />
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button 
                 variant="academic" 
                 onClick={handleSearch}
                 disabled={!searchInput || isSearching}
-                className="w-full"
+                className="flex-1"
               >
                 <Search className="w-4 h-4 mr-2" />
                 {isSearching ? "Searching..." : "Search"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={loadRecentDiplomas}
+                disabled={isLoadingRecent}
+                className="flex-1"
+              >
+                <GraduationCap className="w-4 h-4 mr-2" />
+                {isLoadingRecent ? "Loading..." : "Load Recent"}
               </Button>
             </div>
           </div>
@@ -256,12 +319,24 @@ const UniversityAdminPanel = () => {
         </div>
       </Card>
 
+      {/* Loading State */}
+      {(isLoadingRecent || isSearching) && (
+        <Card className="p-6 bg-gradient-certificate border-2 border-academic-gold shadow-elegant">
+          <div className="flex items-center justify-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-academic-navy"></div>
+            <span className="text-academic-navy font-medium">
+              {isLoadingRecent ? "Loading recent diplomas..." : "Searching..."}
+            </span>
+          </div>
+        </Card>
+      )}
+
       {/* Search Results */}
-      {searchResults.length > 0 && (
+      {searchResults.length > 0 && !isLoadingRecent && !isSearching && (
         <Card className="p-6 bg-gradient-certificate border-2 border-academic-gold shadow-elegant">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-lg font-semibold text-academic-navy">Search Results</h4>
+              <h4 className="text-lg font-semibold text-academic-navy">Recent Diplomas</h4>
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
                 {searchResults.length} found
               </Badge>
