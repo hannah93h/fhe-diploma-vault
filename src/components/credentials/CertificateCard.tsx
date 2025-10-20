@@ -31,6 +31,9 @@ const CertificateCard = ({
     console.log("Downloading certificate...");
   };
 
+  // Debug: Log certificate data
+  console.log("CertificateCard received certificate:", certificate);
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString();
   };

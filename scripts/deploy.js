@@ -1,4 +1,5 @@
-import { ethers } from 'hardhat';
+import pkg from 'hardhat';
+const { ethers } = pkg;
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
@@ -28,9 +29,7 @@ async function main() {
     `VITE_DIPLOMA_VAULT_CONTRACT_ADDRESS || '${contractAddress}'`
   );
   fs.writeFileSync(contractsPath, contractsContent);
-  
-  console.log("Contract address updated in frontend configuration");
-  console.log("Deployment completed successfully!");
+  console.log("Updated contract address in frontend");
 }
 
 main()
