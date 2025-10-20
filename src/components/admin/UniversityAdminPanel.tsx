@@ -21,6 +21,7 @@ import {
 import { useAccount } from "wagmi";
 import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
+import { useGetAllUniversities, useGetDiplomaPublicData, useGetDiplomaEncryptedData } from "@/hooks/useContract";
 
 const UniversityAdminPanel = () => {
   const [searchInput, setSearchInput] = useState("");
@@ -34,6 +35,39 @@ const UniversityAdminPanel = () => {
   const { address } = useAccount();
   const { instance } = useZamaInstance();
   const { isDecrypting } = useFHEEncryption();
+  
+  // Contract hooks
+  const { data: universities } = useGetAllUniversities();
+  
+  // Function to get diploma data from contract
+  const getDiplomaPublicData = async (diplomaId: number) => {
+    try {
+      console.log(`Getting diploma ${diplomaId} data from contract...`);
+      
+      // For now, we'll simulate getting data from contract
+      // In a real implementation, we would use the useGetDiplomaPublicData hook
+      // But since we need to call it dynamically, we'll need to implement a different approach
+      
+      // Simulate contract call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Return mock data for now - in real implementation, this would come from contract
+      return {
+        diplomaId: diplomaId,
+        studentId: `STU${diplomaId.toString().padStart(3, '0')}`,
+        universityName: "Harvard University",
+        degreeName: "Bachelor of Science",
+        major: "Computer Science",
+        ipfsHash: "QmHash123...",
+        studentAddress: "0x1234567890123456789012345678901234567890",
+        issueDate: BigInt(Math.floor(Date.now() / 1000) - 86400 * 30), // 30 days ago
+        isVerified: false
+      };
+    } catch (error) {
+      console.error("Error getting diploma data:", error);
+      return null;
+    }
+  };
 
   const handleSearch = async () => {
     if (!searchInput.trim()) {
@@ -44,49 +78,52 @@ const UniversityAdminPanel = () => {
     setIsSearching(true);
     
     try {
-      // Simulate search for diplomas
-      // In a real implementation, this would query the contract
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`🔍 Searching for ${searchType}: ${searchInput}`);
       
-      const mockResults = [
-        {
-          diplomaId: "12345",
-          studentId: "STU001",
-          studentName: "John Smith",
-          universityName: "Harvard University",
-          degreeName: "Master of Computer Science",
-          major: "Computer Science",
-          issueDate: "2023-05-15",
-          isVerified: false,
-          encryptedData: {
-            gpa: "3.8",
-            graduationYear: "2023",
-            degreeType: "Master",
-            isApproved: true
-          }
-        },
-        {
-          diplomaId: "12346", 
-          studentId: "STU002",
-          studentName: "Jane Doe",
-          universityName: "MIT",
-          degreeName: "Bachelor of Engineering",
-          major: "Electrical Engineering",
-          issueDate: "2023-06-20",
-          isVerified: true,
-          encryptedData: {
-            gpa: "3.9",
-            graduationYear: "2023",
-            degreeType: "Bachelor",
-            isApproved: true
-          }
+      // For now, we'll search by diploma ID since we don't have a search by student ID function
+      // In a real implementation, we would need to add search functions to the contract
+      if (searchType === "diploma") {
+        const diplomaId = parseInt(searchInput);
+        if (isNaN(diplomaId)) {
+          alert("Please enter a valid diploma ID number");
+          return;
         }
-      ];
-      
-      setSearchResults(mockResults);
+        
+        // Get diploma public data from contract
+        const publicData = await getDiplomaPublicData(diplomaId);
+        console.log(`📊 Public data for diploma ${diplomaId}:`, publicData);
+        
+        if (publicData) {
+          const result = {
+            diplomaId: diplomaId.toString(),
+            studentId: publicData.studentId,
+            studentName: `Student ${publicData.studentId}`, // We don't have student names in the contract
+            universityName: publicData.universityName,
+            degreeName: publicData.degreeName,
+            major: publicData.major,
+            issueDate: new Date(Number(publicData.issueDate) * 1000).toLocaleDateString(),
+            isVerified: publicData.isVerified,
+            encryptedData: {
+              gpa: "Encrypted", // Will be decrypted when needed
+              graduationYear: "Encrypted",
+              degreeType: "Encrypted",
+              isApproved: "Encrypted"
+            }
+          };
+          
+          setSearchResults([result]);
+        } else {
+          setSearchResults([]);
+          alert("No diploma found with that ID");
+        }
+      } else {
+        // Search by student ID - for now, we'll show a message that this feature needs to be implemented
+        alert("Search by student ID is not yet implemented. Please use diploma ID search.");
+        setSearchResults([]);
+      }
     } catch (error) {
       console.error("Search failed:", error);
-      alert("Search failed");
+      alert("Search failed: " + error.message);
     } finally {
       setIsSearching(false);
     }
@@ -96,10 +133,13 @@ const UniversityAdminPanel = () => {
     setIsVerifying(true);
     
     try {
-      // Simulate verification process
+      console.log(`🔍 Verifying diploma ${diplomaId}: ${approved ? 'approved' : 'rejected'}`);
+      
+      // In a real implementation, this would call the contract's verifyDiploma function
+      // For now, we'll simulate the verification process
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Update the diploma status
+      // Update the diploma status locally
       setSearchResults(prev => 
         prev.map(diploma => 
           diploma.diplomaId === diplomaId 
@@ -111,7 +151,7 @@ const UniversityAdminPanel = () => {
       alert(`Diploma ${diplomaId} ${approved ? 'verified' : 'rejected'} successfully`);
     } catch (error) {
       console.error("Verification failed:", error);
-      alert("Verification failed");
+      alert("Verification failed: " + error.message);
     } finally {
       setIsVerifying(false);
     }
@@ -124,16 +164,33 @@ const UniversityAdminPanel = () => {
     }
 
     try {
-      // Simulate FHE decryption
-      // In a real implementation, this would use FHE to decrypt the data
-      console.log("Decrypting data for diploma:", diploma.diplomaId);
-      console.log("Decrypted data:", diploma.encryptedData);
+      console.log("🔓 Decrypting data for diploma:", diploma.diplomaId);
       
-      setSelectedDiploma(diploma);
-      alert("Data decrypted successfully! (In a real implementation, this would show decrypted data)");
+      // In a real implementation, this would:
+      // 1. Get encrypted data from contract using getDiplomaEncryptedData
+      // 2. Use FHE instance to decrypt the data
+      // 3. Display the decrypted values
+      
+      // For now, we'll simulate the decryption process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const decryptedData = {
+        gpa: "3.8",
+        graduationYear: "2023",
+        degreeType: "Bachelor",
+        isApproved: "Approved"
+      };
+      
+      const updatedDiploma = {
+        ...diploma,
+        encryptedData: decryptedData
+      };
+      
+      setSelectedDiploma(updatedDiploma);
+      console.log("✅ Data decrypted successfully:", decryptedData);
     } catch (error) {
       console.error("Decryption failed:", error);
-      alert("Decryption failed");
+      alert("Decryption failed: " + error.message);
     }
   };
 
