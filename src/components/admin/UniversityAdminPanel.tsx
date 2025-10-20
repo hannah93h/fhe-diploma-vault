@@ -23,7 +23,11 @@ import { useZamaInstance } from "@/hooks/useZamaInstance";
 import { useFHEEncryption } from "@/hooks/useFHEEncryption";
 import { useGetAllUniversities, useGetDiplomaPublicData, useGetDiplomaEncryptedData, useFHEDiplomaVault } from "@/hooks/useContract";
 
-const UniversityAdminPanel = () => {
+interface UniversityAdminPanelProps {
+  signer?: any;
+}
+
+const UniversityAdminPanel = ({ signer }: UniversityAdminPanelProps) => {
   const [searchInput, setSearchInput] = useState("");
   const [searchType, setSearchType] = useState<"student" | "diploma">("student");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -252,27 +256,122 @@ const UniversityAdminPanel = () => {
   };
 
   const handleDecryptData = async (diploma: any) => {
-    if (!instance) {
-      alert("FHE instance not available");
+    console.log("🔓 Decrypting data for diploma:", diploma.diplomaId);
+    
+    if (!instance || !address) {
+      alert('Please connect your wallet first');
       return;
     }
 
     try {
-      console.log("🔓 Decrypting data for diploma:", diploma.diplomaId);
+      // Get encrypted data from contract using the hook
+      const { CONTRACT_ADDRESSES } = await import('@/lib/contracts');
+      const contractAddress = CONTRACT_ADDRESSES[11155111]?.FHEDiplomaVault;
       
-      // In a real implementation, this would:
-      // 1. Get encrypted data from contract using getDiplomaEncryptedData
-      // 2. Use FHE instance to decrypt the data
-      // 3. Display the decrypted values
+      if (!contractAddress) {
+        alert('Contract address not configured');
+        return;
+      }
+
+      // Get encrypted data from contract using direct call
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
       
-      // For now, we'll simulate the decryption process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://1rpc.io/sepolia')
+      });
+
+      // Call the contract directly with minimal ABI
+      const encryptedData = await publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: [
+          {
+            "inputs": [{"name": "_diplomaId", "type": "uint256"}],
+            "name": "getDiplomaEncryptedData",
+            "outputs": [
+              {"name": "encryptedGpa", "type": "bytes32"},
+              {"name": "encryptedGraduationYear", "type": "bytes32"},
+              {"name": "encryptedDegreeType", "type": "bytes32"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ] as const,
+        functionName: 'getDiplomaEncryptedData',
+        args: [BigInt(diploma.diplomaId)],
+        authorizationList: undefined
+      });
+
+      console.log('Encrypted data from contract:', encryptedData);
+
+      // Create keypair for decryption (following aidwell-connect pattern)
+      const keypair = instance.generateKeypair();
+      console.log('Generated keypair:', keypair);
+
+      // Prepare handle-contract pairs
+      const handleContractPairs = [
+        { handle: encryptedData[0], contractAddress }, // GPA
+        { handle: encryptedData[1], contractAddress }, // Graduation Year
+        { handle: encryptedData[2], contractAddress }, // Degree Type
+      ];
+
+      console.log('Handle-contract pairs:', handleContractPairs);
+
+      // Create EIP712 signature (following aidwell-connect pattern)
+      const startTimeStamp = Math.floor(Date.now() / 1000).toString();
+      const durationDays = '10';
+      const contractAddresses = [contractAddress];
+
+      const eip712 = instance.createEIP712(
+        keypair.publicKey,
+        contractAddresses,
+        startTimeStamp,
+        durationDays
+      );
+
+      console.log('EIP712 signature data:', eip712);
+
+      // Get signer and create signature
+      if (!signer) {
+        throw new Error('Signer not available');
+      }
+
+      const signature = await signer.signTypedData(
+        eip712.domain,
+        { UserDecryptRequestVerification: eip712.types.UserDecryptRequestVerification },
+        eip712.message
+      );
+
+      console.log('Signature created:', signature);
+
+      // Decrypt the data with proper parameters
+      const decryptedResult = await instance.userDecrypt(
+        handleContractPairs,
+        keypair.privateKey,
+        keypair.publicKey,
+        signature.replace('0x', ''),
+        contractAddresses,
+        address,
+        startTimeStamp,
+        durationDays
+      );
       
+      console.log('Decrypted result:', decryptedResult);
+      
+      // Extract decrypted values from result object
+      const gpa = decryptedResult[encryptedData[0]]?.toString() || '0';
+      const graduationYear = decryptedResult[encryptedData[1]]?.toString() || '0';
+      const degreeType = decryptedResult[encryptedData[2]]?.toString() || '0';
+
+      console.log('Extracted values:', { gpa, graduationYear, degreeType });
+      
+      // Update the diploma with decrypted data
       const decryptedData = {
-        gpa: "3.8",
-        graduationYear: "2023",
-        degreeType: "Bachelor",
-        isApproved: "Approved"
+        gpa: gpa,
+        graduationYear: graduationYear,
+        degreeType: degreeType,
+        isApproved: "Approved" // This field is not encrypted in the current contract
       };
       
       const updatedDiploma = {

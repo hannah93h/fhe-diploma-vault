@@ -343,7 +343,7 @@ const Verification = () => {
                     </div>
                   </div>
 
-                  <UniversityAdminPanel />
+                  <UniversityAdminPanel signer={signer} />
                 </div>
               </div>
             </TabsContent>
