@@ -117,6 +117,11 @@ export const useDiplomaManagement = () => {
       return;
     }
 
+    if (hasLoaded) {
+      console.log('⏳ Data already loaded, skipping...');
+      return;
+    }
+
     if (isLoadingDiplomaIds) {
       console.log('⏳ Still loading diploma IDs, waiting...');
       return;
@@ -152,28 +157,32 @@ export const useDiplomaManagement = () => {
         
         if (publicData) {
           // Convert BigInt to number for timestamp
-          const issueTimestamp = typeof publicData.issueDate === 'bigint' 
-            ? Number(publicData.issueDate) 
-            : Number(publicData.issueDate);
+          // publicData is an array, so we need to access by index
+          const issueTimestamp = typeof publicData[7] === 'bigint' 
+            ? Number(publicData[7]) 
+            : Number(publicData[7]);
           
           console.log(`📅 Processing diploma ${diplomaId} issue date:`, publicData.issueDate, 'as number:', issueTimestamp);
           
+          // Debug: Log the actual publicData structure
+          console.log(`🔍 Full publicData for diploma ${diplomaId}:`, publicData);
+          
           decryptedDiplomas.push({
             diplomaId: Number(diplomaId),
-            studentId: publicData.studentId,
+            studentId: publicData[1], // studentId is at index 1
             graduationYear: 0, // Will be empty if not decrypted
             gpa: 0, // Will be empty if not decrypted
             degreeType: 0, // Will be empty if not decrypted
-            isVerified: publicData.isVerified,
+            isVerified: publicData[8], // isVerified is at index 8
             isActive: true,
-            universityName: publicData.universityName,
-            degreeName: publicData.degreeName,
-            major: publicData.major,
-            student: publicData.studentAddress,
+            universityName: publicData[2], // universityName is at index 2
+            degreeName: publicData[3], // degreeName is at index 3
+            major: publicData[4], // major is at index 4
+            student: publicData[6], // studentAddress is at index 6
             university: `0x${'0'.repeat(40)}`,
             issueDate: issueTimestamp,
             expiryDate: issueTimestamp + (365 * 24 * 60 * 60),
-            ipfsHash: publicData.ipfsHash,
+            ipfsHash: publicData[5], // ipfsHash is at index 5
           });
         }
       }
