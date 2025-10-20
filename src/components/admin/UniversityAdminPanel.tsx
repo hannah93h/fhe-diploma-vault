@@ -61,15 +61,20 @@ const UniversityAdminPanel = () => {
         try {
           const diplomaData = await getDiplomaPublicData(i);
           if (diplomaData) {
+            // Convert BigInt to number for timestamp
+            const issueTimestamp = typeof diplomaData[7] === 'bigint' 
+              ? Number(diplomaData[7]) 
+              : Number(diplomaData[7]);
+            
             const result = {
               diplomaId: i.toString(),
-              studentId: diplomaData.studentId,
-              studentName: `Student ${diplomaData.studentId}`,
-              universityName: diplomaData.universityName,
-              degreeName: diplomaData.degreeName,
-              major: diplomaData.major,
-              issueDate: new Date(Number(diplomaData.issueDate) * 1000).toLocaleDateString(),
-              isVerified: diplomaData.isVerified,
+              studentId: diplomaData[1], // studentId is at index 1
+              studentName: `Student ${diplomaData[1]}`,
+              universityName: diplomaData[2], // universityName is at index 2
+              degreeName: diplomaData[3], // degreeName is at index 3
+              major: diplomaData[4], // major is at index 4
+              issueDate: issueTimestamp > 0 ? new Date(issueTimestamp * 1000).toLocaleDateString() : 'Invalid Date',
+              isVerified: diplomaData[8], // isVerified is at index 8
               encryptedData: {
                 gpa: "Encrypted",
                 graduationYear: "Encrypted",
@@ -178,15 +183,20 @@ const UniversityAdminPanel = () => {
         console.log(`📊 Public data for diploma ${diplomaId}:`, publicData);
         
         if (publicData) {
+          // Convert BigInt to number for timestamp
+          const issueTimestamp = typeof publicData[7] === 'bigint' 
+            ? Number(publicData[7]) 
+            : Number(publicData[7]);
+          
           const result = {
             diplomaId: diplomaId.toString(),
-            studentId: publicData.studentId,
-            studentName: `Student ${publicData.studentId}`, // We don't have student names in the contract
-            universityName: publicData.universityName,
-            degreeName: publicData.degreeName,
-            major: publicData.major,
-            issueDate: new Date(Number(publicData.issueDate) * 1000).toLocaleDateString(),
-            isVerified: publicData.isVerified,
+            studentId: publicData[1], // studentId is at index 1
+            studentName: `Student ${publicData[1]}`, // We don't have student names in the contract
+            universityName: publicData[2], // universityName is at index 2
+            degreeName: publicData[3], // degreeName is at index 3
+            major: publicData[4], // major is at index 4
+            issueDate: issueTimestamp > 0 ? new Date(issueTimestamp * 1000).toLocaleDateString() : 'Invalid Date',
+            isVerified: publicData[8], // isVerified is at index 8
             encryptedData: {
               gpa: "Encrypted", // Will be decrypted when needed
               graduationYear: "Encrypted",
