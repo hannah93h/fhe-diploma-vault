@@ -14,25 +14,32 @@ export function useZamaInstance() {
       setIsLoading(true);
       setError(null);
 
+      console.log('Starting FHE initialization...');
+
       // Check if ethereum provider is available
       if (!(window as any).ethereum) {
         throw new Error('Ethereum provider not found');
       }
 
+      console.log('Ethereum provider found, initializing SDK...');
       await initSDK();
+      console.log('SDK initialized successfully');
 
       const config = {
         ...SepoliaConfig,
         network: (window as any).ethereum
       };
 
+      console.log('Creating FHE instance with config:', config);
       const zamaInstance = await createInstance(config);
+      console.log('FHE instance created successfully');
+      
       setInstance(zamaInstance);
       setIsInitialized(true);
 
     } catch (err) {
       console.error('Failed to initialize Zama instance:', err);
-      setError('Failed to initialize encryption service. Please ensure you have a wallet connected.');
+      setError(`Failed to initialize encryption service: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
