@@ -388,6 +388,25 @@ const FHEDiplomaVaultABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_student",
+        "type": "address"
+      }
+    ],
+    "name": "getStudentDiplomas",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const;
 
@@ -519,7 +538,13 @@ export const useGetTranscriptEncryptedData = (transcriptId: bigint) => {
 export const useGetStudentDiplomas = (studentAddress: `0x${string}` | undefined) => {
   const { contractAddress } = useFHEDiplomaVault();
   
-  return useReadContract({
+  console.log('🔍 useGetStudentDiplomas called with:', {
+    studentAddress,
+    contractAddress,
+    enabled: !!contractAddress && !!studentAddress
+  });
+  
+  const result = useReadContract({
     address: contractAddress,
     abi: FHEDiplomaVaultABI,
     functionName: 'getStudentDiplomas',
@@ -528,6 +553,14 @@ export const useGetStudentDiplomas = (studentAddress: `0x${string}` | undefined)
       enabled: !!contractAddress && !!studentAddress,
     },
   });
+
+  console.log('📊 useGetStudentDiplomas result:', {
+    data: result.data,
+    isLoading: result.isLoading,
+    error: result.error
+  });
+
+  return result;
 };
 
 export const useCreateDiploma = () => {

@@ -51,17 +51,28 @@ export const useDiplomaManagement = () => {
   const { data: diplomaIds, isLoading: isLoadingDiplomaIds, error: diplomaIdsError } = useGetStudentDiplomas(address);
 
   const loadUserCredentials = useCallback(async () => {
+    console.log('🔍 loadUserCredentials called with:', {
+      instance: !!instance,
+      address,
+      isLoadingDiplomaIds,
+      diplomaIds,
+      diplomaIdsError
+    });
+
     if (!instance || !address) {
+      console.log('❌ Missing instance or address');
       setError('Wallet not connected or FHE not initialized');
       return;
     }
 
     if (isLoadingDiplomaIds) {
+      console.log('⏳ Still loading diploma IDs, waiting...');
       return; // Wait for diploma IDs to load
     }
 
     if (diplomaIdsError) {
-      setError('Failed to load diploma IDs');
+      console.error('❌ Diploma IDs error:', diplomaIdsError);
+      setError(`Failed to load diploma IDs: ${diplomaIdsError.message || diplomaIdsError}`);
       return;
     }
 
