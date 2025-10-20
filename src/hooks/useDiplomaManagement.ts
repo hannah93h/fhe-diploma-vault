@@ -160,9 +160,9 @@ export const useDiplomaManagement = () => {
           decryptedDiplomas.push({
             diplomaId: Number(diplomaId),
             studentId: publicData.studentId,
-            graduationYear: 2024, // Default for demo
-            gpa: 3.8, // Default for demo
-            degreeType: 1, // Default for demo
+            graduationYear: 0, // Will be empty if not decrypted
+            gpa: 0, // Will be empty if not decrypted
+            degreeType: 0, // Will be empty if not decrypted
             isVerified: publicData.isVerified,
             isActive: true,
             universityName: publicData.universityName,

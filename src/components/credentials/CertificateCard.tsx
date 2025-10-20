@@ -92,7 +92,7 @@ const CertificateCard = ({
         
         <div className="text-sm">
           <span className="text-muted-foreground">GPA: </span>
-          <span className="font-semibold text-academic-navy">{certificate.gpa ? `${certificate.gpa}/4.0` : 'N/A/4.0'}</span>
+          <span className="font-semibold text-academic-navy">{certificate.gpa > 0 ? `${certificate.gpa}/4.0` : 'N/A'}</span>
         </div>
 
         <div className="text-sm">
