@@ -22,6 +22,7 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
   const { createDiploma: contractCreateDiploma, isPending, isConfirming, isConfirmed, error } = useCreateDiploma();
   const { address } = useAccount();
   const { universities, isLoading: universitiesLoading } = useUniversities();
+  const { contractAddress } = useFHEDiplomaVault();
   
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
@@ -124,7 +125,6 @@ const CredentialCreator: React.FC<CredentialCreatorProps> = ({ onCredentialCreat
         throw new Error('FHE instance not initialized');
       }
 
-      const { contractAddress } = useFHEDiplomaVault();
       if (!contractAddress) {
         throw new Error('Contract address not configured');
       }
